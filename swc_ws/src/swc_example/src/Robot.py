@@ -58,7 +58,7 @@ class Robot():
     
     # final function call for speed
     def getDesiredSpeed(self):
-        return self.getDist() * 200000 # it's WORKING! but honestly you don't need a PID for this. Just go fast lol
+        return self.getDist() * 300000 # it's WORKING! but honestly you don't need a PID for this. Just go fast lol
         
     # final function call for angle
     def getAngle(self):
