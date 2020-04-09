@@ -6,6 +6,7 @@ import Robot as r
 from swc_msgs.msg import Control
 from swc_msgs.msg import Gps
 from sensor_msgs.msg import Imu
+from sensor_msgs.msg import Image
 from swc_msgs.srv import Waypoints
 
 _control_pub = None
@@ -13,6 +14,9 @@ _control_pub = None
 def timer_callback(event):
     # Publish the message to /sim/control so the simulator receives it
     _control_pub.publish(robot.getAction())
+
+def img_callback(data):
+    print(data.data)
 
 def main():
     global _control_pub
@@ -35,14 +39,17 @@ def main():
     # create instance of Robot class
     robot = r.Robot("DarkTheme", waypoints.waypoints)
 
-    # Create a timer that calls timer_callback() with a period of 0.1 (10 Hz)
-    rospy.Timer(rospy.Duration(0.1), timer_callback)
+    # Create a timer that calls timer_callback() with a period of read the thing
+    rospy.Timer(rospy.Duration(0.07), timer_callback)
 
     # get GPS coords
     rospy.Subscriber("/sim/gps", Gps, robot.updateCoords)
 
     # get IMU
     rospy.Subscriber("/sim/imu", Imu, robot.updateCurrAngle)
+
+    # get Camera
+    #rospy.Subscriber("/sim/image/compressed", Image, img_callback)
 
     # Let ROS take control of this thread until a ROS wants to kill
     rospy.spin()

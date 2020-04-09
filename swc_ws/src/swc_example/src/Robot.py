@@ -6,14 +6,29 @@ import tf
 class Robot():
     def __init__(self, name, waypoints):
         self.name = name
+
         self.curr_lat = waypoints[0].latitude # have us start out at first location
         self.curr_lon = waypoints[0].longitude
         self.target_waypoints = waypoints
+        
         self.curr_angle = 0.0
         #self.speedPID = pid.PIDController(10, 0.0001, 0.0001, 0.1, 0, 0.1) # we want no error/zero distance, but we have .1 tolerance
         #self.anglePID = pid.PIDController(100, 0, 0, 0.1, 0, 0.1) # we want no diff between angle and angle to goal
+        
         self.updateTarget(1) # to set first goal
         self.target_index = 1 # start with bonus waypoint as 1st target
+
+        self.cam_data = []
+        self.num_per_rows = 0
+        self.waypoint_target = {
+            "x":0,
+            "y":0
+        }
+    
+    # recieve camera stream
+    def updateCamera(self, cam):
+        self.cam_data = cam.data
+        self.num_per_rows = cam.steps
 
     # updates the robot's current position and handle goal waypoint stuff
     def updateCoords(self, gps):
@@ -29,6 +44,7 @@ class Robot():
             self.target_index += 1
             self.updateTarget(self.target_index)
 
+    # updates the target we P to
     def updateTarget(self, index):
         self.goal_lat = self.target_waypoints[index].latitude
         self.goal_lon = self.target_waypoints[index].longitude
@@ -58,12 +74,12 @@ class Robot():
     
     # final function call for speed
     def getDesiredSpeed(self):
-        return self.getDist() * 300000 # it's WORKING! but honestly you don't need a PID for this. Just go fast lol
+        return self.getDist() * 250000 # it's WORKING! but honestly you don't need a PID for this. Just go fast lol
         
     # final function call for angle
     def getAngle(self):
         return (self.curr_angle - self.getDesiredAngle()) * 5 # It's WORKING! but anglePID is messed up. And we understeer a lot
-        # that's why we have a x3
+        # that's why we have a x5
         
     # function that actually gives the control() message
     def getAction(self):
