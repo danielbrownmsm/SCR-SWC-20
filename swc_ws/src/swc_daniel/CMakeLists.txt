@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(swc_example)
+project(swc_daniel)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -105,7 +105,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES swc_example
+#  LIBRARIES swc_daniel
    CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
@@ -176,7 +176,7 @@ add_dependencies(cpp_robot_control_node swc_msgs_generate_messages_cpp)
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_swc_example.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_swc_daniel.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
