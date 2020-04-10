@@ -1,41 +1,39 @@
 from swc_msgs.msg import Control
 import math
+import numpy as np
 import tf
 
 class Robot():
-    def __init__(self, name, waypoints):
-        self.name = name
-
+    def __init__(self, waypoints):
         self.curr_lat = waypoints[0].latitude # have us start out at first location
         self.curr_lon = waypoints[0].longitude # to prevent driving backwards really fast at sim start
-        self.target_waypoints = waypoints
+        self.target_waypoints = waypoints # this is a comment
         self.aboutToFallOff = False # if we miss the final waypoint and are going to fall off edge
         
-        self.curr_angle = 0.0
+        self.curr_angle = 0.0 # initialize, amiright?
+        self.x_accel = 0.0
+        self.velocity = 0.0
         
-        self.speedP = 250000
-        self.angleP = 5.2
+        self.speedP = 250000 # gains for the P controllers
+        self.angleP = 5.2 # angle is a bit whack, speed just go fast lol
         
         self.target_index = 1 # start with bonus waypoint 1 as 1st target
         self.changeTarget(self.target_index) # to set first goal
 
-        self.cam_data = []
-        self.num_per_rows = 0
-        self.waypoint_target = {
-            "x":0,
-            "y":0
-        }
+        self.cam_data = [] # this I understand (not)
+        self.num_per_rows = 0 # ooh, docs!
     
     # recieve camera stream
     def updateCamera(self, cam):
         self.cam_data = cam.data
+        # print(cam.data)
         self.num_per_rows = cam.steps
 
     # updates the robot's current position
     def updateCoords(self, gps):
         self.curr_lat = gps.latitude
         self.curr_lon = gps.longitude
-        updateTarget()
+        self.updateTarget()
     
     #  and handle goal waypoint stuff
     def updateTarget(self):
@@ -50,6 +48,8 @@ class Robot():
             self.changeTarget(self.target_index)
         elif self.curr_lat > self.target_waypoints[4].latitude:
             self.aboutToFallOff = True
+        else:
+            self.aboutToFallOff = False
 
     # updates the target we P to
     def changeTarget(self, index):
@@ -73,11 +73,15 @@ class Robot():
         return math.asin(self.getXDist() / self.getDist()) # trig. this is _soh_cahtoa. So sin(angle) gives opposite / hypot. So asin(opposit / hypot) gives angle (asin is inverse sine)
     
     # updates our current angle from IMU data
-    def updateAngle(self, data):
+    def updateIMU(self, data):
         quat = data.orientation # we're interested in orientation
         explicit_quat = [quat.x, quat.y, quat.z, quat.w] # this is a workaround for types not playing nice
         euler = tf.transformations.euler_from_quaternion(explicit_quat) # get a euler
         self.curr_angle = euler[2] # and update the yaw
+
+        self.x_accel = data.linear_acceleration.x # now for accel
+        self.velocity = self.velocity + self.x_accel * 0.04
+        print(self.velocity)
     
     # final function call for speed
     def getDesiredSpeed(self):
@@ -85,13 +89,13 @@ class Robot():
         
     # final function call for angle
     def getDesiredAngle(self):
-        if self.aboutToFallOff:
-            return 90
-        if self.obstructed:
-            if self.curr_angle - self.getDesiredAngle() > 0:
-                return 45
-            else:
-                return -45
+        #if self.aboutToFallOff:
+        #    return -45
+        #if self.obstructed:
+        #    if self.curr_angle - self.getDesiredAngle() > 0:
+        #        return 45
+        #    else:
+        #        return -45
         return (self.curr_angle - self.getNeededAngle()) * self.angleP # It's WORKING! but anglePID is messed up. And we understeer a lot
         # that's why we have a x5
         
