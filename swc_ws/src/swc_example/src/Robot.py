@@ -10,6 +10,7 @@ class Robot():
         self.curr_lat = waypoints[0].latitude # have us start out at first location
         self.curr_lon = waypoints[0].longitude
         self.target_waypoints = waypoints
+        self.aboutToFallOff = False
         
         self.curr_angle = 0.0
         #self.speedPID = pid.PIDController(10, 0.0001, 0.0001, 0.1, 0, 0.1) # we want no error/zero distance, but we have .1 tolerance
@@ -43,6 +44,8 @@ class Robot():
         elif self.curr_lat > self.target_waypoints[3].latitude and self.target_index == 3:
             self.target_index += 1
             self.updateTarget(self.target_index)
+        elif self.curr_lat > self.target_waypoints[4].latitude:
+            self.aboutToFallOff = True
 
     # updates the target we P to
     def updateTarget(self, index):
@@ -78,7 +81,14 @@ class Robot():
         
     # final function call for angle
     def getAngle(self):
-        return (self.curr_angle - self.getDesiredAngle()) * 5 # It's WORKING! but anglePID is messed up. And we understeer a lot
+        if self.aboutToFallOff:
+            return 90
+        if self.obstructed:
+            if self.curr_angle - self.getDesiredAngle() > 0:
+                return 45
+            else:
+                return -45
+        return (self.curr_angle - self.getDesiredAngle()) * 5.2 # It's WORKING! but anglePID is messed up. And we understeer a lot
         # that's why we have a x5
         
     # function that actually gives the control() message
