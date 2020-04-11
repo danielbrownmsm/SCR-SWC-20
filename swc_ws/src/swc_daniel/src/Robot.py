@@ -26,9 +26,8 @@ class Robot():
 
         self.laser_data = [] # list for LIDAR
         self.stripped_data = [] # data after we're done with it (evil grin)
-        #self.lowest_range = 0.0
         self.num_laser = 0
-        self.laser_threshold = 63
+        self.laser_threshold = 45
         self.obstructed = False
     
     # recieve camera stream
@@ -37,12 +36,15 @@ class Robot():
         # print(cam.data)
         self.num_per_rows = cam.steps
 
+    # get LIDAR data
     def updateLaser(self, data):
         self.laser_data = data.ranges # range from robot to object
-        self.stripped_data = self.laser_data[205:-10] # we only care about the front-of-robot part
-        self.stripped_data = [x for x in self.stripped_data if x > 0.01] # strip all 0's and really low #'s (thx SO)
-        #self.lowest_range = min(self.laser_data) # get lowest number
+        self.stripped_data = self.laser_data[215:-20] # we only care about the front-facing part
+        #print(self.stripped_data)
+        self.stripped_data = [x for x in self.stripped_data if x > 0.00001 and x <= 1.5] # strip all 0's and really low #'s (thx SO)
+        # as well as anything too far away (>1.75)
         self.num_laser = len(self.stripped_data)
+        #print(self.num_laser)
         if self.num_laser >= self.laser_threshold:
             self.obstructed = True
         else:
@@ -116,9 +118,9 @@ class Robot():
             return -45
         if self.obstructed:
             if self.curr_angle - self.getNeededAngle() > 0:
-                return 45
+                return 30
             else:
-                return -45
+                return 30
         return (self.curr_angle - self.getNeededAngle()) * self.angleP # It's WORKING! but anglePID is messed up. And we understeer a lot
         # that's why we have a x5
         
