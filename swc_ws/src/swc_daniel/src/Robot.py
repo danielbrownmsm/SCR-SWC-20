@@ -7,8 +7,11 @@ class Robot():
     def __init__(self, waypoints):
         self.curr_lat = waypoints[0].latitude # have us start out at first location
         self.curr_lon = waypoints[0].longitude # to prevent driving backwards really fast at sim start
+        
         self.target_waypoints = waypoints # this is a comment
         self.aboutToFallOff = False # if we miss the final waypoint and are going to fall off edge
+        self.target_index = 1 # start with bonus waypoint 1 as 1st target
+        self.changeTarget(self.target_index) # to set first goal
         
         self.curr_angle = 0.0 # initialize, amiright?
         self.x_accel = 0.0
@@ -17,9 +20,6 @@ class Robot():
         self.speedP = 250000 # gains for the P controllers
         self.angleP = 5.2 # angle is a bit whack, speed just go fast lol
         
-        self.target_index = 1 # start with bonus waypoint 1 as 1st target
-        self.changeTarget(self.target_index) # to set first goal
-
         self.cam_data = [] # this I understand (not)
         self.num_per_rows = 0 # ooh, docs!
     
@@ -28,6 +28,11 @@ class Robot():
         self.cam_data = cam.data
         # print(cam.data)
         self.num_per_rows = cam.steps
+
+    def updateLaser(self, data):
+        print(data.ranges)
+        print(data.range_min)
+        print(data.range_max)
 
     # updates the robot's current position
     def updateCoords(self, gps):
@@ -46,7 +51,8 @@ class Robot():
         elif self.curr_lat > self.target_waypoints[3].latitude and self.target_index == 3:
             self.target_index += 1
             self.changeTarget(self.target_index)
-        elif self.curr_lat > self.target_waypoints[4].latitude:
+        
+        if self.curr_lat > self.target_waypoints[4].latitude:
             self.aboutToFallOff = True
         else:
             self.aboutToFallOff = False

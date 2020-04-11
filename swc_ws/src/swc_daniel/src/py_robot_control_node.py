@@ -7,6 +7,7 @@ from swc_msgs.msg import Control
 from swc_msgs.msg import Gps
 from sensor_msgs.msg import Imu
 from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import LaserScan
 from swc_msgs.srv import Waypoints
 
 _control_pub = None
@@ -42,7 +43,8 @@ def main():
     # get GPS coords, IMU data, and Camera
     rospy.Subscriber("/sim/gps", Gps, robot.updateCoords)
     rospy.Subscriber("/sim/imu", Imu, robot.updateIMU)
-    rospy.Subscriber("/sim/image/compressed", CompressedImage, robot.updateCamera)
+    #rospy.Subscriber("/sim/image/compressed", CompressedImage, robot.updateCamera)
+    rospy.Subscriber("/sim/scan", LaserScan, robot.updateLaser)
 
     # Let ROS take control of this thread until a ROS wants to kill
     rospy.spin()
