@@ -1,6 +1,6 @@
 from swc_msgs.msg import Control
 import math
-import numpy as np
+# import numpy as np
 import tf
 
 class Robot():
@@ -22,6 +22,14 @@ class Robot():
         
         self.cam_data = [] # this I understand (not)
         self.num_per_rows = 0 # ooh, docs!
+        self.color_data = []
+
+        self.laser_data = [] # list for LIDAR
+        self.stripped_data = [] # data after we're done with it (evil grin)
+        #self.lowest_range = 0.0
+        self.num_laser = 0
+        self.laser_threshold = 63
+        self.obstructed = False
     
     # recieve camera stream
     def updateCamera(self, cam):
@@ -30,9 +38,16 @@ class Robot():
         self.num_per_rows = cam.steps
 
     def updateLaser(self, data):
-        print(data.ranges)
-        print(data.range_min)
-        print(data.range_max)
+        self.laser_data = data.ranges # range from robot to object
+        self.stripped_data = self.laser_data[205:-10] # we only care about the front-of-robot part
+        self.stripped_data = [x for x in self.stripped_data if x > 0.01] # strip all 0's and really low #'s (thx SO)
+        #self.lowest_range = min(self.laser_data) # get lowest number
+        self.num_laser = len(self.stripped_data)
+        if self.num_laser >= self.laser_threshold:
+            self.obstructed = True
+        else:
+            self.obstructed = False
+
 
     # updates the robot's current position
     def updateCoords(self, gps):
@@ -87,21 +102,23 @@ class Robot():
 
         self.x_accel = data.linear_acceleration.x # now for accel
         self.velocity = self.velocity + self.x_accel * 0.04
-        print(self.velocity)
+        #print(self.velocity)
     
+    # -- Control --
+
     # final function call for speed
     def getDesiredSpeed(self):
         return self.getDist() * self.speedP # it's WORKING! but honestly you don't need a PID for this. Just go fast lol
         
     # final function call for angle
     def getDesiredAngle(self):
-        #if self.aboutToFallOff:
-        #    return -45
-        #if self.obstructed:
-        #    if self.curr_angle - self.getDesiredAngle() > 0:
-        #        return 45
-        #    else:
-        #        return -45
+        if self.aboutToFallOff:
+            return -45
+        if self.obstructed:
+            if self.curr_angle - self.getNeededAngle() > 0:
+                return 45
+            else:
+                return -45
         return (self.curr_angle - self.getNeededAngle()) * self.angleP # It's WORKING! but anglePID is messed up. And we understeer a lot
         # that's why we have a x5
         

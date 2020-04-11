@@ -44,7 +44,7 @@ def main():
     rospy.Subscriber("/sim/gps", Gps, robot.updateCoords)
     rospy.Subscriber("/sim/imu", Imu, robot.updateIMU)
     #rospy.Subscriber("/sim/image/compressed", CompressedImage, robot.updateCamera)
-    rospy.Subscriber("/sim/scan", LaserScan, robot.updateLaser)
+    rospy.Subscriber("/scan", LaserScan, robot.updateLaser)
 
     # Let ROS take control of this thread until a ROS wants to kill
     rospy.spin()
