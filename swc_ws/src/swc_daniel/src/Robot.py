@@ -17,8 +17,8 @@ class Robot():
         self.x_accel = 0.0
         self.velocity = 0.0
         
-        self.speedP = 250000 # gains for the P controllers
-        self.angleP = 5.2 # angle is a bit whack, speed just go fast lol
+        self.speedP = 150000 # gains for the P controllers
+        self.angleP = 5.3 # angle is a bit whack, speed just go fast lol
         
         self.cam_data = [] # this I understand (not)
         self.num_per_rows = 0 # ooh, docs!
@@ -27,8 +27,10 @@ class Robot():
         self.laser_data = [] # list for LIDAR
         self.stripped_data = [] # data after we're done with it (evil grin)
         self.num_laser = 0
-        self.laser_threshold = 45
+        self.obstructed_threshold = 40
+        self.reverse_threshold = 80
         self.obstructed = False
+        self.reverse_now = False
     
     # recieve camera stream
     def updateCamera(self, cam):
@@ -36,19 +38,26 @@ class Robot():
         # print(cam.data)
         self.num_per_rows = cam.steps
 
-    # get LIDAR data
+    # get and handle LIDAR data
     def updateLaser(self, data):
         self.laser_data = data.ranges # range from robot to object
         self.stripped_data = self.laser_data[215:-20] # we only care about the front-facing part
         #print(self.stripped_data)
         self.stripped_data = [x for x in self.stripped_data if x > 0.00001 and x <= 1.5] # strip all 0's and really low #'s (thx SO)
-        # as well as anything too far away (>1.75)
+        # as well as anything too far away (>1.5)
         self.num_laser = len(self.stripped_data)
         #print(self.num_laser)
-        if self.num_laser >= self.laser_threshold:
+        # if we're going to hit an obstacle
+        if self.num_laser >= self.obstructed_threshold:
             self.obstructed = True
         else:
             self.obstructed = False
+        
+        # if we're running against an obstacle
+        if self.num_laser >= self.reverse_threshold:
+            self.reverse_now = True
+        else:
+            self.reverse_now = False
 
 
     # updates the robot's current position
@@ -110,12 +119,14 @@ class Robot():
 
     # final function call for speed
     def getDesiredSpeed(self):
+        if self.reverse_now: # if we're up against an obstacle
+            return -8
         return self.getDist() * self.speedP # it's WORKING! but honestly you don't need a PID for this. Just go fast lol
         
     # final function call for angle
     def getDesiredAngle(self):
         if self.aboutToFallOff:
-            return -45
+            return -20
         if self.obstructed:
             if self.curr_angle - self.getNeededAngle() > 0:
                 return 30
