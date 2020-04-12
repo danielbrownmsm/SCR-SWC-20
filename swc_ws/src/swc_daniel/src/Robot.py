@@ -10,6 +10,8 @@ class Robot():
         
         self.target_waypoints = waypoints # this is a comment
         self.aboutToFallOff = False # if we miss the final waypoint and are going to fall off edge
+        self.atBoundaryLat = "none"
+        self.atBoundaryLon = "none"
         self.target_index = 1 # start with bonus waypoint 1 as 1st target
         self.changeTarget(self.target_index) # to set first goal
         
@@ -17,7 +19,7 @@ class Robot():
         self.x_accel = 0.0
         self.velocity = 0.0
         
-        self.speedP = 150000 # gains for the P controllers
+        self.speedP = 155000 # gains for the P controllers
         self.angleP = 5.3 # angle is a bit whack, speed just go fast lol
         
         self.cam_data = [] # this I understand (not)
@@ -27,8 +29,8 @@ class Robot():
         self.laser_data = [] # list for LIDAR
         self.stripped_data = [] # data after we're done with it (evil grin)
         self.num_laser = 0
-        self.obstructed_threshold = 40
-        self.reverse_threshold = 80
+        self.obstructed_threshold = 35
+        self.reverse_threshold = 70
         self.obstructed = False
         self.reverse_now = False
     
@@ -64,7 +66,10 @@ class Robot():
     def updateCoords(self, gps):
         self.curr_lat = gps.latitude
         self.curr_lon = gps.longitude
+        #print(self.atBoundaryLat)
+        #print(self.atBoundaryLon)
         self.updateTarget()
+        self.checkBoundaries()
     
     #  and handle goal waypoint stuff
     def updateTarget(self):
@@ -77,11 +82,23 @@ class Robot():
         elif self.curr_lat > self.target_waypoints[3].latitude and self.target_index == 3:
             self.target_index += 1
             self.changeTarget(self.target_index)
-        
-        if self.curr_lat > self.target_waypoints[4].latitude:
-            self.aboutToFallOff = True
+    
+    def checkBoundaries(self):
+        # if we're too far up or down
+        if self.curr_lat > 35.2063480829:
+            self.atBoundaryLat = "top"
+        elif self.curr_lat < 35.20541594:
+            self.atBoundaryLat = "bottom"
         else:
-            self.aboutToFallOff = False
+            self.atBoundaryLat = "none"
+        
+        # if we're too far right or left
+        if self.curr_lon < -97.4425903447:
+            self.atBoundaryLon = "right"
+        elif self.curr_lon > -97.4420318775:
+            self.atBoundaryLon = "left"
+        else:
+            self.atBoundaryLon = "none"
 
     # updates the target we P to
     def changeTarget(self, index):
@@ -91,18 +108,20 @@ class Robot():
     # implementation of distance formula, for internal use
     def dist(self, x1, y1, x2, y2):
         return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) # distance formula, derived from pythagorean theorum
-    
+        # Haversine formula would be better, yes, but then XDist would have to be in meters and I don't wanna
+
     # returns distance between robot and goal
     def getDist(self):
         return self.dist(self.curr_lon, self.curr_lat, self.goal_lon, self.goal_lat)
     
     # needed for the angle that we want to drive at
     def getXDist(self):
-        return self.goal_lon - self.curr_lon # idk if this is right, might need to flip
+        return self.goal_lon - self.curr_lon # this works no touchy
     
     # gives us the angle that we want to get to
     def getNeededAngle(self):
-        return math.asin(self.getXDist() / self.getDist()) # trig. this is _soh_cahtoa. So sin(angle) gives opposite / hypot. So asin(opposit / hypot) gives angle (asin is inverse sine)
+        return math.asin(self.getXDist() / self.getDist()) # trig. this is _soh_cahtoa. So sin(angle) gives
+        # opposite / hypot. So asin(opposit / hypot) gives angle (asin is inverse sine)
     
     # updates our current angle from IMU data
     def updateIMU(self, data):
@@ -119,21 +138,31 @@ class Robot():
 
     # final function call for speed
     def getDesiredSpeed(self):
-        if self.reverse_now: # if we're up against an obstacle
-            return -8
-        return self.getDist() * self.speedP # it's WORKING! but honestly you don't need a PID for this. Just go fast lol
+        if self.obstructed: # if we have an obstacle
+            return 4 # go a little slower
+        elif self.reverse_now: # if we're up against an obstacle
+            return -8 # back up (untested)
+
+        return self.getDist() * self.speedP # Just go fast lol
         
     # final function call for angle
     def getDesiredAngle(self):
-        if self.aboutToFallOff:
-            return -20
+        # check LIDAR
         if self.obstructed:
             if self.curr_angle - self.getNeededAngle() > 0:
                 return 30
             else:
                 return 30
+        
+        # check boundaries (after LIDAR so it overrides it)
+        if self.atBoundaryLon == "left":
+            return 30
+        elif self.atBoundaryLon == "right":
+            return -30
+        if self.atBoundaryLat == "top" or self.atBoundaryLat == "bottom":
+            return 30 # simple I know but idk if it works
+        
         return (self.curr_angle - self.getNeededAngle()) * self.angleP # It's WORKING! but anglePID is messed up. And we understeer a lot
-        # that's why we have a x5
         
     # function that actually gives the control() message
     def getAction(self):
