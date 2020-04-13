@@ -8,16 +8,19 @@ class Robot():
         self.curr_lat = waypoints[0].latitude # have us start out at first location
         self.curr_lon = waypoints[0].longitude # to prevent driving backwards really fast at sim start
         
-        self.target_waypoints = waypoints # this is a comment
-        self.aboutToFallOff = False # if we miss the final waypoint and are going to fall off edge
-        self.atBoundaryLat = "none"
-        self.atBoundaryLon = "none"
+        self.target_waypoints = waypoints # get waypoint data
+        self.waypoint_threshold = 0.00001 # how close we have to be to count a waypoint as reached
+        self.lat_error = 0.0 # diff between current and goal latitude
+        self.lon_error = 0.0 # same here but for longitude
+        self.atBoundaryLat = "none" # GPS boudaries
+        self.atBoundaryLon = "none"# top/bottom and right/left
         self.target_index = 1 # start with bonus waypoint 1 as 1st target
         self.changeTarget(self.target_index) # to set first goal
         
         self.curr_angle = 0.0 # initialize, amiright?
         self.x_accel = 0.0
-        self.velocity = 0.0
+        self.z_accel = 0.0 # we go up when we hit obstacles right?
+        self.x_velocity = 0.0 # for (maybe) obstacle detection
         
         self.speedP = 155000 # gains for the P controllers
         self.angleP = 5.3 # angle is a bit whack, speed just go fast lol
@@ -28,27 +31,25 @@ class Robot():
 
         self.laser_data = [] # list for LIDAR
         self.stripped_data = [] # data after we're done with it (evil grin)
-        self.num_laser = 0
-        self.obstructed_threshold = 35
-        self.reverse_threshold = 70
+        self.num_laser = 0 # length of stripped data
+        self.obstructed_threshold = 35 # threshold for needing to turn
+        self.reverse_threshold = 70 # threshold for backing up
         self.obstructed = False
         self.reverse_now = False
     
-    # recieve camera stream
-    def updateCamera(self, cam):
-        self.cam_data = cam.data
-        # print(cam.data)
-        self.num_per_rows = cam.steps
+    # recieve camera stream (not currently working)
+    #def updateCamera(self, cam):
+    #    self.cam_data = cam.data
+    #    # print(cam.data)
+    #    self.num_per_rows = cam.steps
 
     # get and handle LIDAR data
     def updateLaser(self, data):
         self.laser_data = data.ranges # range from robot to object
         self.stripped_data = self.laser_data[215:-20] # we only care about the front-facing part
-        #print(self.stripped_data)
-        self.stripped_data = [x for x in self.stripped_data if x > 0.00001 and x <= 1.5] # strip all 0's and really low #'s (thx SO)
-        # as well as anything too far away (>1.5)
+        self.stripped_data = [x for x in self.stripped_data if x > 0.0001 and x <= 1.25] # strip unwanted numbers
+        # too far away (>1.25) and not-detected (0)
         self.num_laser = len(self.stripped_data)
-        #print(self.num_laser)
         # if we're going to hit an obstacle
         if self.num_laser >= self.obstructed_threshold:
             self.obstructed = True
@@ -58,30 +59,30 @@ class Robot():
         # if we're running against an obstacle
         if self.num_laser >= self.reverse_threshold:
             self.reverse_now = True
-        else:
-            self.reverse_now = False
-
 
     # updates the robot's current position
     def updateCoords(self, gps):
         self.curr_lat = gps.latitude
         self.curr_lon = gps.longitude
-        #print(self.atBoundaryLat)
-        #print(self.atBoundaryLon)
-        self.updateTarget()
-        self.checkBoundaries()
+        self.updateTarget() # see if we've achieved goal and then go to the next one
+        self.checkBoundaries() # make sure we're not about to fall off
     
     #  and handle goal waypoint stuff
     def updateTarget(self):
-        if self.curr_lat > self.target_waypoints[1].latitude and self.target_index == 1: # if we've made it past 1st waypoint
+        if self.targetReached() and self.target_index == 1: # if we're past 1st waypoint
             self.target_index += 1 # go to next waypoint
             self.changeTarget(self.target_index)
-        elif self.curr_lat > self.target_waypoints[2].latitude and self.target_index == 2:
+        elif self.targetReached() and self.target_index == 2:
             self.target_index += 1 # go for next
             self.changeTarget(self.target_index)
-        elif self.curr_lat > self.target_waypoints[3].latitude and self.target_index == 3:
+        elif self.targetReached() and self.target_index == 3:
             self.target_index += 1
             self.changeTarget(self.target_index)
+    
+    def targetReached(self):
+        self.lat_error = math.fabs(self.curr_lat) - math.fabs(self.goal_lat)
+        self.lon_error = math.fabs(self.curr_lon) - math.fabs(self.goal_lon)
+        return math.fabs(self.lat_error) < self.waypoint_threshold and math.fabs(self.lon_error) < self.waypoint_threshold
     
     def checkBoundaries(self):
         # if we're too far up or down
@@ -130,9 +131,14 @@ class Robot():
         euler = tf.transformations.euler_from_quaternion(explicit_quat) # get a euler
         self.curr_angle = euler[2] # and update the yaw
 
+        # accel/velocity
+        self.z_accel = data.linear_acceleration.z # hacky but it works because whack collision physics
+        if math.fabs(self.z_accel) > 0.5:
+            self.reverse_now = True
+        else:
+            self.reverse_now = False
         self.x_accel = data.linear_acceleration.x # now for accel
-        self.velocity = self.velocity + self.x_accel * 0.04
-        #print(self.velocity)
+        self.x_velocity = self.x_velocity + self.x_accel * 0.04
     
     # -- Control --
 
@@ -162,7 +168,7 @@ class Robot():
         if self.atBoundaryLat == "top" or self.atBoundaryLat == "bottom":
             return 30 # simple I know but idk if it works
         
-        return (self.curr_angle - self.getNeededAngle()) * self.angleP # It's WORKING! but anglePID is messed up. And we understeer a lot
+        return (self.curr_angle - self.getNeededAngle()) * self.angleP # return the error times gain
         
     # function that actually gives the control() message
     def getAction(self):
@@ -171,4 +177,4 @@ class Robot():
         control_msg.turn_angle = self.getDesiredAngle()
         return control_msg
     
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
