@@ -8,11 +8,17 @@ class Robot():
         self.curr_lon = waypoints[0].longitude # to prevent driving backwards really fast at sim start
         
         self.target_waypoints = waypoints # get waypoint data
+        self.atBoundaryLat = "none" # GPS boundaries
+        self.atBoundaryLon = "none"# top/bottom and right/left
+        self.boundaries = { # define boundaries in easily accessed area
+            "top":35.2063480829,
+            "bottom":35.20541594,
+            "right":-97.4425903447,
+            "left":-97.4420318775}
+        
         self.waypoint_threshold = 0.00001 # how close we have to be to count a waypoint as reached
         self.lat_error = 0.0 # diff between current and goal latitude
         self.lon_error = 0.0 # same here but for longitude
-        self.atBoundaryLat = "none" # GPS boudaries
-        self.atBoundaryLon = "none"# top/bottom and right/left
         self.target_index = 1 # start with bonus waypoint 1 as 1st target
         self.changeTarget(self.target_index) # to set first goal
         
@@ -23,9 +29,9 @@ class Robot():
         self.speedP = 175000 # gains for the P controllers
         self.angleP = 10 # angle is a bit whack, speed just go fast lol
         
-        self.cam_data = [] # this I understand (not)
-        self.num_per_rows = 0 # ooh, docs!
-        self.color_data = []
+        #self.cam_data = [] # this I understand (not)
+        #self.num_per_rows = 0 # ooh, docs!
+        #self.color_data = []
 
         self.laser_data = [] # list for LIDAR
         self.stripped_data = [] # data after we're done with it (evil grin)
@@ -33,6 +39,7 @@ class Robot():
         self.obstructed_threshold = 35 # threshold for needing to turn
         self.reverse_threshold = 70 # threshold for backing up
         self.obstructed = False
+        
         self.reverse_now = False
     
     # recieve camera stream (not currently working)
@@ -90,17 +97,17 @@ class Robot():
     
     def checkBoundaries(self):
         # if we're too far up or down
-        if self.curr_lat > 35.2063480829:
+        if self.curr_lat > self.boundaries["top"]:
             self.atBoundaryLat = "top"
-        elif self.curr_lat < 35.20541594:
+        elif self.curr_lat < self.boundaries["bottom"]:
             self.atBoundaryLat = "bottom"
         else:
             self.atBoundaryLat = "none"
         
         # if we're too far right or left
-        if self.curr_lon < -97.4425903447:
+        if self.curr_lon < self.boundaries["right"]:
             self.atBoundaryLon = "right"
-        elif self.curr_lon > -97.4420318775:
+        elif self.curr_lon > self.boundaries["left"]:
             self.atBoundaryLon = "left"
         else:
             self.atBoundaryLon = "none"
@@ -110,10 +117,12 @@ class Robot():
         self.goal_lat = self.target_waypoints[index].latitude
         self.goal_lon = self.target_waypoints[index].longitude
     
-    # implementation of distance formula, for internal use
-    def dist(self, x1, y1, x2, y2):
-        return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) # distance formula, derived from pythagorean theorum
-        # Haversine formula would be better, yes, but then XDist would have to be in meters and I don't wanna
+    # haversine formula for distance, used internally
+    def dist(self, lat1, lon1, lat2, lon2):
+        dLat = math.radians(math.fabs(lat1) - math.fabs(lat2))
+        dLon = math.radians(math.fabs(lon1) - math.fabs(lon2))
+        a = math.sin(dLat/2) * math.sin(dLat/2) + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dLon/2) * math.sin(dLon/2)
+        return 6378.137 * 2 * math.atan2(math.sqrt(a), math.sqrt(a-1)) * 1000
 
     # returns distance between robot and goal
     def getDist(self):
@@ -121,7 +130,8 @@ class Robot():
     
     # needed for the angle that we want to drive at
     def getXDist(self):
-        return self.goal_lon - self.curr_lon # this works no touchy
+        return self.dist(self.curr_lon, self.goal_lat, self.goal_lon, self.goal_lat) # uses identical latitude so all we get is longitude
+    #    return self.goal_lon - self.curr_lon # this works no touchy
     
     # gives us the angle that we want to get to
     def getNeededAngle(self):
@@ -152,6 +162,14 @@ class Robot():
         
     # final function call for angle
     def getDesiredAngle(self):
+        # check boundaries (before LIDAR so it overrides it)
+        if self.atBoundaryLon == "left":
+            return 30
+        elif self.atBoundaryLon == "right":
+            return -30
+        if self.atBoundaryLat == "top" or self.atBoundaryLat == "bottom":
+            return 20 # works barely
+        
         if self.reverse_now:
             if self.curr_angle - self.getNeededAngle() > 0:
                 return 30
@@ -165,14 +183,6 @@ class Robot():
             else:
                 return -30
         
-        # check boundaries (after LIDAR so it overrides it)
-        if self.atBoundaryLon == "left":
-            return 30
-        elif self.atBoundaryLon == "right":
-            return -30
-        if self.atBoundaryLat == "top" or self.atBoundaryLat == "bottom":
-            return 20 # works barely
-        
         return (self.curr_angle - self.getNeededAngle()) * self.angleP # return the error times gain
         
     # function that actually gives the control() message
@@ -180,6 +190,7 @@ class Robot():
         control_msg = Control()
         control_msg.speed = self.getDesiredSpeed()
         control_msg.turn_angle = self.getDesiredAngle()
+        print(self.getNeededAngle)
         return control_msg
     
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
