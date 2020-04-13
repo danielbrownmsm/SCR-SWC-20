@@ -6,7 +6,9 @@ import Robot as r
 from swc_msgs.msg import Control
 from swc_msgs.msg import Gps
 from sensor_msgs.msg import Imu
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import LaserScan
+from std_msgs.msg import Bool
 from swc_msgs.srv import Waypoints
 
 _control_pub = None
@@ -14,9 +16,6 @@ _control_pub = None
 def timer_callback(event):
     # Publish the message to /sim/control so the simulator receives it
     _control_pub.publish(robot.getAction())
-
-def img_callback(data):
-    print(data.data)
 
 def main():
     global _control_pub
@@ -37,19 +36,18 @@ def main():
     # Define where we need to go (order is: start, bonus, bonus, bonus, finish with bonusses roughly in 
     # order of how far away they are)
     # create instance of Robot class
-    robot = r.Robot("DarkTheme", waypoints.waypoints)
+    robot = r.Robot(waypoints.waypoints)
 
     # Create a timer that calls timer_callback() with a period of read the thing
     rospy.Timer(rospy.Duration(0.07), timer_callback)
 
-    # get GPS coords
+    # get sensor data
     rospy.Subscriber("/sim/gps", Gps, robot.updateCoords)
-
-    # get IMU
-    rospy.Subscriber("/sim/imu", Imu, robot.updateCurrAngle)
-
-    # get Camera
-    #rospy.Subscriber("/sim/image/compressed", Image, img_callback)
+    rospy.Subscriber("/sim/imu", Imu, robot.updateIMU)
+    #rospy.Subscriber("/sim/image/compressed", CompressedImage, robot.updateCamera)
+    #rospy.Subscriber("/scan", LaserScan, robot.updateLaser)
+    rospy.Subscriber("/sim/bumper", Bool, robot.updateBumper)
+    #rospy.Subscriber("/velocity", Velocity, robot.updateVelocity)
 
     # Let ROS take control of this thread until a ROS wants to kill
     rospy.spin()
