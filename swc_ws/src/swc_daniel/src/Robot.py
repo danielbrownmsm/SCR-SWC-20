@@ -1,6 +1,5 @@
 from swc_msgs.msg import Control
 import math
-# import numpy as np
 import tf
 
 class Robot():
@@ -19,11 +18,10 @@ class Robot():
         
         self.curr_angle = 0.0 # initialize, amiright?
         self.x_accel = 0.0
-        self.z_accel = 0.0 # we go up when we hit obstacles right?
         self.x_velocity = 0.0 # for (maybe) obstacle detection
         
-        self.speedP = 155000 # gains for the P controllers
-        self.angleP = 5.3 # angle is a bit whack, speed just go fast lol
+        self.speedP = 175000 # gains for the P controllers
+        self.angleP = 10 # angle is a bit whack, speed just go fast lol
         
         self.cam_data = [] # this I understand (not)
         self.num_per_rows = 0 # ooh, docs!
@@ -42,6 +40,12 @@ class Robot():
     #    self.cam_data = cam.data
     #    # print(cam.data)
     #    self.num_per_rows = cam.steps
+
+    def updateBumper(self, msg):
+        if msg.data:
+            self.reverse_now = True
+        else:
+            self.reverse_now = False
 
     # get and handle LIDAR data
     def updateLaser(self, data):
@@ -82,7 +86,7 @@ class Robot():
     def targetReached(self):
         self.lat_error = math.fabs(self.curr_lat) - math.fabs(self.goal_lat)
         self.lon_error = math.fabs(self.curr_lon) - math.fabs(self.goal_lon)
-        return math.fabs(self.lat_error) < self.waypoint_threshold and math.fabs(self.lon_error) < self.waypoint_threshold
+        return math.fabs(self.lat_error) < self.waypoint_threshold and math.fabs(self.lon_error) < self.waypoint_threshold and self.getDist() < self.waypoint_threshold
     
     def checkBoundaries(self):
         # if we're too far up or down
@@ -131,34 +135,35 @@ class Robot():
         euler = tf.transformations.euler_from_quaternion(explicit_quat) # get a euler
         self.curr_angle = euler[2] # and update the yaw
 
-        # accel/velocity
-        self.z_accel = data.linear_acceleration.z # hacky but it works because whack collision physics
-        if math.fabs(self.z_accel) > 0.5:
-            self.reverse_now = True
-        else:
-            self.reverse_now = False
-        self.x_accel = data.linear_acceleration.x # now for accel
-        self.x_velocity = self.x_velocity + self.x_accel * 0.04
+        # accel/velocity - commented out for now
+        # self.x_accel = data.linear_acceleration.x # now for accel
+        # self.x_velocity = self.x_velocity + self.x_accel * 0.04
     
     # -- Control --
 
     # final function call for speed
     def getDesiredSpeed(self):
-        if self.obstructed: # if we have an obstacle
-            return 4 # go a little slower
-        elif self.reverse_now: # if we're up against an obstacle
+        if self.reverse_now: # if we're up against an obstacle
             return -8 # back up (untested)
+        elif self.obstructed: # if we have an obstacle
+            return 4 # go a little slower
 
         return self.getDist() * self.speedP # Just go fast lol
         
     # final function call for angle
     def getDesiredAngle(self):
+        if self.reverse_now:
+            if self.curr_angle - self.getNeededAngle() > 0:
+                return 30
+            #else:
+                #return -30 # robot can get stuck in infinite loop
+            return 30
         # check LIDAR
         if self.obstructed:
             if self.curr_angle - self.getNeededAngle() > 0:
                 return 30
             else:
-                return 30
+                return -30
         
         # check boundaries (after LIDAR so it overrides it)
         if self.atBoundaryLon == "left":
@@ -166,7 +171,7 @@ class Robot():
         elif self.atBoundaryLon == "right":
             return -30
         if self.atBoundaryLat == "top" or self.atBoundaryLat == "bottom":
-            return 30 # simple I know but idk if it works
+            return 20 # works barely
         
         return (self.curr_angle - self.getNeededAngle()) * self.angleP # return the error times gain
         
