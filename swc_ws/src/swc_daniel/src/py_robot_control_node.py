@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import rospy
-import random
 import Robot as r
 from swc_msgs.msg import Control
 from swc_msgs.msg import Gps
