@@ -122,12 +122,12 @@ include_directories(
 )
 
 ## Declare C++ executables
-add_executable(cpp_robot_control_node src/cpp_robot_control_node.cpp)
+#add_executable(cpp_robot_control_node src/cpp_robot_control_node.cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(cpp_robot_control_node ${catkin_LIBRARIES})
+#target_link_libraries(cpp_robot_control_node ${catkin_LIBRARIES})
 
-add_dependencies(cpp_robot_control_node swc_msgs_generate_messages_cpp)
+#add_dependencies(cpp_robot_control_node swc_msgs_generate_messages_cpp)
 
 #############
 ## Install ##
