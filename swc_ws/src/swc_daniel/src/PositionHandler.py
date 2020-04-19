@@ -36,6 +36,10 @@ class PositionHandler:
     def interpretWaypoints(self):
         # TODO make interpret waypoints
         # have it take waypoints and convert to x,y relative to robot starting coordinates
+        waypoint1 = (lat1, lon1)
+        waypoint2 = (lat2, lon2)
+        waypoint3 = (lat2, lon1)
+        
 
 
     # updates target if we've reached it, else continue
