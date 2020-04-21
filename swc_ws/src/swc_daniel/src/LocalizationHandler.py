@@ -6,9 +6,12 @@ class LocalizationHandler:
         self.x = 0.0
         self.y = 0.0
 
+        self.dt = 0.07 # ==TEMPTEMP VAL==
+
         self.v_velocity = 0.0 # data from velocity publisher
         self.c_velocity = 0.0 # from Control
         self.a_velocity = 0.0 # from acceleration (IMU)
+        self.vel = 0.0
 
         self.acceleration = 0.0 # getting from callback
         self.prev_acceleration = 0.0
@@ -22,7 +25,7 @@ class LocalizationHandler:
 
     # callback for velocity
     def velocityCallback(self, data):
-        self.v_velocity = data.Float32
+        self.v_velocity = data.data
     
     # callback for control_msg
     def controlCallback(self, data):
@@ -40,8 +43,13 @@ class LocalizationHandler:
         self.prev_acceleration = self.acceleration # so, you know, we actually update
 
     def getVelocity(self):
-        return ((self.c_velocity * 2) + (self.v_velocity * 2) + self.a_velocity) / 5 # average velocity, with less weight
-        # given to velocity got from acceleration
+        return ((self.c_velocity * 2) + (self.v_velocity * 4) + self.a_velocity) / 7 # average velocity, with less weight
+        # given to velocity got from acceleration and more given to velocity publisher
+    
+    def updatePosition(self):
+        self.vel = self.getVelocity()
+        self.x = self.x + self.vel * cos(self.heading) * self.dt
+        self.y = self.y + self.vel * sin(self.heading) * self.dt
     
     # ===publishing===
     # and publish!
