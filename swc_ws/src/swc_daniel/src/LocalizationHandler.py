@@ -1,7 +1,7 @@
 from swc_msgs import Position
 
 class LocalizationHandler:
-    def __init__(self, waypoint_data):
+    def __init__(self, converted_waypoints):
         self.heading = 0.0
         self.x = 0.0
         self.y = 0.0
@@ -16,8 +16,7 @@ class LocalizationHandler:
         self.acceleration = 0.0 # getting from callback
         self.prev_acceleration = 0.0
 
-        self.waypoint_data = waypoint_data
-        self.start_point = (self.waypoint_data[0].latitude, self.waypoint_data[0].longitude)
+        self.converted_waypoints = converted_waypoints
     
     #
     # ===velocity managment===

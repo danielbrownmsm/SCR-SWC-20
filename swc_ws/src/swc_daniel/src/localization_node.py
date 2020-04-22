@@ -2,6 +2,7 @@
 
 import rospy
 import LocalizationHandler as LH
+import WaypointsHandler as WH
 from swc_msgs.msg import Control
 from swc_msgs.msg import Gps
 from sensor_msgs.msg import Imu
@@ -17,6 +18,7 @@ def timer_callback(event):
 def main():
     global _position_pub
     global lh
+    global wh
 
     # Initalize our node in ROS
     rospy.init_node('localization_node.py')
@@ -28,9 +30,10 @@ def main():
     rospy.wait_for_service('/sim/waypoints')
     waypoints = rospy.ServiceProxy('/sim/waypoints', Waypoints)()
 
-    # Define where we need to go (order is: start, bonus, bonus, bonus, finish with bonuses roughly in 
-    # order of how far away they are)
-    lh = LH.LocalizationHandler(waypoints.waypoints)
+    # create waypoint handler, which then converts goals to x, y coordinates in meters, so LIDAR can _actually work_
+    wh = WH.WaypointsHandler(waypoints.waypoints)
+    # pass those into the localization handler
+    lh = LH.LocalizationHandler(wh.getWaypointsXY())
 
     # Create a timer that calls timer_callback() with a period of 0.07
     rospy.Timer(rospy.Duration(0.07), timer_callback)
