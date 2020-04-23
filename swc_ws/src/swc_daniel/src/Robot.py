@@ -4,66 +4,31 @@ import tf
 
 class Robot():
     def __init__(self, waypoints):
+        self.time = 0.0
+        
         self.curr_lat = waypoints[0].latitude # have us start out at first location
         self.curr_lon = waypoints[0].longitude # to prevent driving backwards really fast at sim start
         
-        self.target_waypoints = waypoints # get waypoint data
         self.waypoint_threshold = 0.00001 # how close we have to be to count a waypoint as reached
         self.lat_error = 0.0 # diff between current and goal latitude
         self.lon_error = 0.0 # same here but for longitude
-        self.atBoundaryLat = "none" # GPS boudaries
-        self.atBoundaryLon = "none"# top/bottom and right/left
+        
+        self.target_waypoints = waypoints # get waypoint data
         self.target_index = 1 # start with bonus waypoint 1 as 1st target
         self.changeTarget(self.target_index) # to set first goal
         
-        self.curr_angle = 0.0 # initialize, amiright?
-        self.x_accel = 0.0
-        self.x_velocity = 0.0 # for (maybe) obstacle detection
+        self.atBoundaryLat = "none" # GPS boudaries
+        self.atBoundaryLon = "none"# top/bottom and right/left
         
+        self.curr_angle = 0.0 # initialize, amiright?
+
         self.speedP = 175000 # gains for the P controllers
         self.angleP = 10 # angle is a bit whack, speed just go fast lol
+
+    # hacky timer stuff for logging purposes
+    def updateTime(self):
+        self.time += 0.01
         
-        self.cam_data = [] # this I understand (not)
-        self.num_per_rows = 0 # ooh, docs!
-        self.color_data = []
-
-        self.laser_data = [] # list for LIDAR
-        self.stripped_data = [] # data after we're done with it (evil grin)
-        self.num_laser = 0 # length of stripped data
-        self.obstructed_threshold = 35 # threshold for needing to turn
-        self.reverse_threshold = 70 # threshold for backing up
-        self.obstructed = False
-        self.reverse_now = False
-    
-    # recieve camera stream (not currently working)
-    #def updateCamera(self, cam):
-    #    self.cam_data = cam.data
-    #    # print(cam.data)
-    #    self.num_per_rows = cam.steps
-
-    def updateBumper(self, msg):
-        if msg.data:
-            self.reverse_now = True
-        else:
-            self.reverse_now = False
-
-    # get and handle LIDAR data
-    def updateLaser(self, data):
-        self.laser_data = data.ranges # range from robot to object
-        self.stripped_data = self.laser_data[215:-20] # we only care about the front-facing part
-        self.stripped_data = [x for x in self.stripped_data if x > 0.0001 and x <= 1.25] # strip unwanted numbers
-        # too far away (>1.25) and not-detected (0)
-        self.num_laser = len(self.stripped_data)
-        # if we're going to hit an obstacle
-        if self.num_laser >= self.obstructed_threshold:
-            self.obstructed = True
-        else:
-            self.obstructed = False
-        
-        # if we're running against an obstacle
-        if self.num_laser >= self.reverse_threshold:
-            self.reverse_now = True
-
     # updates the robot's current position
     def updateCoords(self, gps):
         self.curr_lat = gps.latitude
@@ -74,12 +39,15 @@ class Robot():
     #  and handle goal waypoint stuff
     def updateTarget(self):
         if self.targetReached() and self.target_index == 1: # if we're past 1st waypoint
+            print("[" + str(self.time) + "] Waypoint 1 reached!")
             self.target_index += 1 # go to next waypoint
             self.changeTarget(self.target_index)
         elif self.targetReached() and self.target_index == 2:
+            print("[" + str(self.time) + "] Waypoint 2 reached!")
             self.target_index += 1 # go for next
             self.changeTarget(self.target_index)
         elif self.targetReached() and self.target_index == 3:
+            print("[" + str(self.time) + "] Waypoint 3 reached!")
             self.target_index += 1
             self.changeTarget(self.target_index)
     
@@ -92,16 +60,20 @@ class Robot():
         # if we're too far up or down
         if self.curr_lat > 35.2063480829:
             self.atBoundaryLat = "top"
+            print("[" + str(self.time) + "] At boundary top!")
         elif self.curr_lat < 35.20541594:
             self.atBoundaryLat = "bottom"
+            print("[" + str(self.time) + "] At boundary bottom!")
         else:
             self.atBoundaryLat = "none"
         
         # if we're too far right or left
         if self.curr_lon < -97.4425903447:
             self.atBoundaryLon = "right"
+            print("[" + str(self.time) + "] At boundary right!")
         elif self.curr_lon > -97.4420318775:
             self.atBoundaryLon = "left"
+            print("[" + str(self.time) + "] At boundary left!")
         else:
             self.atBoundaryLon = "none"
 
@@ -109,11 +81,12 @@ class Robot():
     def changeTarget(self, index):
         self.goal_lat = self.target_waypoints[index].latitude
         self.goal_lon = self.target_waypoints[index].longitude
+        # print("[" + str(self.time) + "] Updating target: " + str(index))
     
     # implementation of distance formula, for internal use
     def dist(self, x1, y1, x2, y2):
         return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) # distance formula, derived from pythagorean theorum
-        # Haversine formula would be better, yes, but then XDist would have to be in meters and I don't wanna
+        # Haversine formula would be better, yes, but then XDist would have to be in meters and I don't wanna convert
 
     # returns distance between robot and goal
     def getDist(self):
@@ -135,37 +108,20 @@ class Robot():
         euler = tf.transformations.euler_from_quaternion(explicit_quat) # get a euler
         self.curr_angle = euler[2] # and update the yaw
 
-        # accel/velocity - commented out for now
-        # self.x_accel = data.linear_acceleration.x # now for accel
-        # self.x_velocity = self.x_velocity + self.x_accel * 0.04
-    
     # -- Control --
 
     # final function call for speed
     def getDesiredSpeed(self):
-        if self.reverse_now: # if we're up against an obstacle
-            return -8 # back up (untested)
-        elif self.obstructed: # if we have an obstacle
-            return 4 # go a little slower
-
+        if (self.getDist() * self.speedP) < 1:
+            print("[" + str(self.time) + "] ROBOT GO WHIR")
+            return 2
+        elif (self.getDist() * self.speedP) > 8:
+            return 8 # return max speed. doesn't really do anything but it might
         return self.getDist() * self.speedP # Just go fast lol
         
     # final function call for angle
     def getDesiredAngle(self):
-        if self.reverse_now:
-            if self.curr_angle - self.getNeededAngle() > 0:
-                return 30
-            #else:
-                #return -30 # robot can get stuck in infinite loop
-            return 30
-        # check LIDAR
-        if self.obstructed:
-            if self.curr_angle - self.getNeededAngle() > 0:
-                return 30
-            else:
-                return -30
-        
-        # check boundaries (after LIDAR so it overrides it)
+        # check boundaries
         if self.atBoundaryLon == "left":
             return 30
         elif self.atBoundaryLon == "right":

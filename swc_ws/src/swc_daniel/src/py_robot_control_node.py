@@ -13,6 +13,9 @@ from swc_msgs.srv import Waypoints
 
 _control_pub = None
 
+def timer_callback2(event):
+    robot.updateTime() # yes, hacky. deal with it
+
 def timer_callback(event):
     # Publish the message to /sim/control so the simulator receives it
     _control_pub.publish(robot.getAction())
@@ -36,19 +39,17 @@ def main():
     # Define where we need to go (order is: start, bonus, bonus, bonus, finish with bonusses roughly in 
     # order of how far away they are)
     # create instance of Robot class
+    print("We're in")
     robot = r.Robot(waypoints.waypoints)
 
     # Create a timer that calls timer_callback() with a period of read the thing
     rospy.Timer(rospy.Duration(0.07), timer_callback)
+    rospy.Timer(rospy.Duration(0.01), timer_callback2)
 
     # get sensor data
     rospy.Subscriber("/sim/gps", Gps, robot.updateCoords)
     rospy.Subscriber("/sim/imu", Imu, robot.updateIMU)
-    #rospy.Subscriber("/sim/image/compressed", CompressedImage, robot.updateCamera)
-    #rospy.Subscriber("/scan", LaserScan, robot.updateLaser)
-    rospy.Subscriber("/sim/bumper", Bool, robot.updateBumper)
-    #rospy.Subscriber("/velocity", Velocity, robot.updateVelocity)
-
+    
     # Let ROS take control of this thread until a ROS wants to kill
     rospy.spin()
 
