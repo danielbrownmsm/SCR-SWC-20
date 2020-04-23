@@ -35,8 +35,8 @@ def main():
     # pass those into the localization handler
     lh = LH.LocalizationHandler(wh.getWaypointsXY())
 
-    # Create a timer that calls timer_callback() with a period of 0.07
-    rospy.Timer(rospy.Duration(0.07), timer_callback)
+    # Create a timer that calls timer_callback() with a period of 0.1
+    rospy.Timer(rospy.Duration(0.1), timer_callback)
 
     # get sensor data
     rospy.Subscriber("/sim/gps", Gps, lh.gpsCallback)
