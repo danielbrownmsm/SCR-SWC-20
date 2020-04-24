@@ -9,7 +9,7 @@ class LocalizationHandler:
         self.goal_x = 0.0
         self.goal_y = 0.0
 
-        self.dt = 0.1 # ==TEMPTEMP VAL==
+        self.dt = 0.1 # *Subject to change*
 
         self.v_velocity = 0.0 # data from velocity publisher
         self.c_velocity = 0.0 # from Control
@@ -27,6 +27,7 @@ class LocalizationHandler:
     # ===waypoint achievement management=== (call updateTarget() somewhere
     # else nothing happens)
 
+    # updates the target we are trying to reach
     def updateTarget(self):
         if self.targetReached() and self.target_index == 1: # if we're past 1st waypoint
             self.target_index += 1 # go to next waypoint
@@ -75,16 +76,24 @@ class LocalizationHandler:
         return ((self.c_velocity * 2) + (self.v_velocity * 4) + self.a_velocity) / 7 # average velocity, with less weight
         # given to velocity got from acceleration and more given to velocity publisher
     
+
     def updatePosition(self):
         self.vel = self.getVelocity()
         self.x = self.x + self.vel * cos(self.heading) * self.dt
         self.y = self.y + self.vel * sin(self.heading) * self.dt
     
+    #
     # ===publishing===
+    #
+
     # and publish!
     def getMessage(self):
+        self.updatePosition() # necessary to actually calculate x and y
+        self.updateTarget() # so we can, you know, try to get bonus waypoints
         positionMessage = Position()
         positionMessage.x = self.x
         positionMessage.y = self.y
         positionMessage.heading = self.heading
+        positionMessage.goal_x = self.goal_x
+        positionMessage.goal_y = self.goal_y
         return positionMessage

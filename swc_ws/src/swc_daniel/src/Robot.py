@@ -49,10 +49,7 @@ class Robot():
     #    self.num_per_rows = cam.steps
 
     def updateBumper(self, msg):
-        if msg.data:
-            self.reverse_now = True
-        else:
-            self.reverse_now = False
+        self.reverse_now = msg.data # sweet. made it one-line!
 
     # get and handle LIDAR data
     def updateLaser(self, data):
