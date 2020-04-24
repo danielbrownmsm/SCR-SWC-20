@@ -1,5 +1,6 @@
-from swc_msgs import Position
+from swc_msgs.msg import Position
 from math import cos, sin, fabs, sqrt, radians, asin
+import tf
 
 class LocalizationHandler:
     def __init__(self, converted_waypoints):
@@ -9,7 +10,9 @@ class LocalizationHandler:
         self.goal_x = 0.0
         self.goal_y = 0.0
 
-        self.dt = 0.1 # *Subject to change*
+        self.margin = 0.1 # *subject to change*
+
+        self.dt = 0.1 # *subject to change*
 
         self.v_velocity = 0.0 # data from velocity publisher
         self.c_velocity = 0.0 # from Control
@@ -86,6 +89,8 @@ class LocalizationHandler:
         self.vel = self.getVelocity()
         self.x = self.x + self.vel * cos(self.heading) * self.dt
         self.y = self.y + self.vel * sin(self.heading) * self.dt
+        #print("x: " + str(self.x))
+        #print("y: " + str(self.y))
     
     #
     # ===publishing===

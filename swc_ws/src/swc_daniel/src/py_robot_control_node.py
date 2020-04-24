@@ -14,7 +14,8 @@ _control_pub = None
 
 def timer_callback(event):
     # Publish the message to /sim/control so the simulator receives it
-    _control_pub.publish(robot.getAction())
+    #_control_pub.publish(robot.getAction())
+    return
 
 def main():
     global _control_pub

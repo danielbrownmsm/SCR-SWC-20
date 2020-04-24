@@ -3,11 +3,14 @@
 import rospy
 import LocalizationHandler as LH
 import WaypointsHandler as WH
+
 from swc_msgs.msg import Control
 from swc_msgs.msg import Gps
-from sensor_msgs.msg import Imu
-from std_msgs.msg import Float32
+from swc_msgs.msg import Position
 from swc_msgs.srv import Waypoints
+
+from std_msgs.msg import Float32
+from sensor_msgs.msg import Imu
 
 _position_pub = None
 
@@ -41,7 +44,7 @@ def main():
     rospy.Timer(rospy.Duration(0.1), timer_callback)
 
     # get sensor data
-    rospy.Subscriber("/sim/gps", Gps, lh.gpsCallback)
+    #rospy.Subscriber("/sim/gps", Gps, lh.gpsCallback)
     rospy.Subscriber("/sim/control", Control, lh.controlCallback)
     rospy.Subscriber("/sim/imu", Imu, lh.imuCallback)
     rospy.Subscriber("/sim/velocity", Float32, lh.velocityCallback)

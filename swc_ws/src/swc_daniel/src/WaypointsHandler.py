@@ -1,4 +1,4 @@
-from geopy import distance
+from vincenty import vincenty
 
 class WaypointsHandler:
     def __init__(self, waypoint_data):
@@ -23,13 +23,15 @@ class WaypointsHandler:
             # x1, y2|x2, y2 
             # latitude = y; longitude = x
             # order is (x, y) and (lat, lon) _normally_
-            # (x1, y2, x2, y2)
-            x_dist = distance.Distance(data[loop_var].longitude, self.start_point.latitude, self.start_point.longitude, self.start_point.latitude)
-            # (x1, y1, x1, y2)
-            y_dist = distance.Distance(data[loop_var].longitude, data[loop_var].latitude, data[lopp_var].longitude, self.start_point.latitude)
+            # (x1, y2, x2, y2) (except no because lat, lon)
+            # so (y2, x1, y2, x2)
+            x_dist = vincenty((self.start_point.latitude, data[loop_var].longitude), (self.start_point.latitude, self.start_point.longitude))
+
+            # (x1, y1, x1, y2) except no so (y1, x1, y2, x2)
+            y_dist = vincenty((data[loop_var].latitude, data[loop_var].longitude), (self.start_point.latitude, data[loop_var].longitude))
             
-            point = (x_dist, y_dist)
-            print("Converted: " + point)
+            point = (x_dist * 1000, y_dist * 1000) # it returns kilometers, and we want meters
+            print("Converted: " + str(point[0]) + ", " + str(point[1]))
             converted_points.append(point)
 
             loop_var += 1
