@@ -22,10 +22,13 @@ class ControlHandler:
 
         # if we are currently against an obstacle and going to die
         self.reverse = False
+
+        self.time = 0.0
     
     def bumperCallback(self, data):
         if data.msg:
             self.reverse = True
+            print("[" + str(self.time) + "] Reversing!")
             return
         self.reverse = False
 
@@ -41,6 +44,8 @@ class ControlHandler:
 
         self.x_dist = self.goal_x - self.x
         self.y_dist = self.goal_y - self.y
+
+        self.time = data.time
     
     # gives us angle we need to turn to using trig
     def getTurnAngle(self):
@@ -50,13 +55,14 @@ class ControlHandler:
     # gives us the speed we should drive at
     def getSpeed(self):
         if self.reverse: # if we be hurtin
-            return -8 # we need to get outa here
+            return -8 # we need to get outta here
         
         # else we good
         val = sqrt(self.x_dist ** 2, self.y_dist ** 2) * self.speed_p # pythagorean theorem plus a P controller
         if val > 8:
             return 8 # to not possibly overflow anything (that won't happen, riiiiiight?)
         elif val < 2:
+            print("[" + str(self.time) + "] Too slow!")
             return 2 # to not go slow
         return val
         

@@ -23,6 +23,7 @@ def main():
     _control_pub = rospy.Publisher("/sim/control", Control, queue_size=1)
 
     ch = CH.ControlHandler()
+    print("Control initialized!")
 
     # Create a timer that calls timer_callback() with a period of 0.1
     rospy.Timer(rospy.Duration(0.1), timer_callback)

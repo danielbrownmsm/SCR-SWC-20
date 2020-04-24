@@ -22,6 +22,8 @@ class LocalizationHandler:
         self.converted_waypoints = converted_waypoints
         self.target_index = 1
         self.changeTarget(self.target_index)
+
+        self.time = 0.0
     
     #
     # ===waypoint achievement management=== (call updateTarget() somewhere
@@ -32,12 +34,15 @@ class LocalizationHandler:
         if self.targetReached() and self.target_index == 1: # if we're past 1st waypoint
             self.target_index += 1 # go to next waypoint
             self.changeTarget(self.target_index)
+            print("[" + str(self.time) + "] Waypoint 1 reached!")
         elif self.targetReached() and self.target_index == 2:
             self.target_index += 1 # go for next
             self.changeTarget(self.target_index)
+            print("[" + str(self.time) + "] Waypoint 2 reached!")
         elif self.targetReached() and self.target_index == 3:
             self.target_index += 1
             self.changeTarget(self.target_index)
+            print("[" + str(self.time) + "] Waypoint 3 reached!")
     
     def targetReached(self):
         self.x_error = fabs(self.x) - fabs(self.goal_x)
@@ -88,6 +93,7 @@ class LocalizationHandler:
 
     # and publish!
     def getMessage(self):
+        self.time += 0.1 # timer_callback() calls at speed of .1s
         self.updatePosition() # necessary to actually calculate x and y
         self.updateTarget() # so we can, you know, try to get bonus waypoints
         positionMessage = Position()
@@ -96,4 +102,5 @@ class LocalizationHandler:
         positionMessage.heading = self.heading
         positionMessage.goal_x = self.goal_x
         positionMessage.goal_y = self.goal_y
+        positionMessage.time = self.time
         return positionMessage

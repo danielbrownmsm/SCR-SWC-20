@@ -32,8 +32,10 @@ def main():
 
     # create waypoint handler, which then converts goals to x, y coordinates in meters, so LIDAR can _actually work_
     wh = WH.WaypointsHandler(waypoints.waypoints)
+    print("Converting waypoints...")
     # pass those into the localization handler
     lh = LH.LocalizationHandler(wh.getWaypointsXY())
+    print("We have localization!")
 
     # Create a timer that calls timer_callback() with a period of 0.1
     rospy.Timer(rospy.Duration(0.1), timer_callback)

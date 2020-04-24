@@ -29,10 +29,10 @@ class WaypointsHandler:
             y_dist = distance.Distance(data[loop_var].longitude, data[loop_var].latitude, data[lopp_var].longitude, self.start_point.latitude)
             
             point = (x_dist, y_dist)
+            print("Converted: " + point)
             converted_points.append(point)
 
             loop_var += 1
-        
         return converted_points
     
     def getWaypointsXY(self):
