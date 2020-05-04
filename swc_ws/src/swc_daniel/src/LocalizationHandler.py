@@ -1,12 +1,13 @@
 from swc_msgs.msg import Position
 from math import cos, sin, fabs, sqrt, radians, asin
+from vincenty import vincenty
 import tf
 
 class LocalizationHandler:
-    def __init__(self, converted_waypoints):
+    def __init__(self, converted_waypoints, start_point):
         self.heading = 0.0
-        self.x = 0.0
-        self.y = 0.0
+        self.v_x = 0.0
+        self.v_y = 0.0
         self.goal_x = 0.0
         self.goal_y = 0.0
 
@@ -25,6 +26,12 @@ class LocalizationHandler:
         self.converted_waypoints = converted_waypoints
         self.target_index = 1
         self.changeTarget(self.target_index)
+
+        self.start_lat = start_point.latitude
+        self.start_lon = start_point.longitude
+
+        self.lat = 0.0
+        self.lon = 0.0
 
         self.time = 0.0
     
@@ -79,19 +86,30 @@ class LocalizationHandler:
         self.acceleration = data.linear_acceleration.x
         self.velocity = self.prev_acceleration + self.acceleration * 0.04 # "imu refreshes at ~25Hz" so 0.04
         self.prev_acceleration = self.acceleration # so, you know, we actually update
+    
+    def gpsCallback(self, data):
+        self.lat = data.latitude
+        self.lon = data.longitude
 
-    def getVelocity(self):
-        #avg_vel = ((self.c_velocity * 2) + (self.v_velocity * 4) + self.a_velocity) / 7
-        avg_vel = (self.v_velocity + self.a_velocity) / 2
-        print(avg_vel)
-        return avg_vel # average velocity, with less weight
-        # given to velocity got from acceleration and more given to velocity publisher
+    #def getVelocity(self):
+    #    #avg_vel = ((self.c_velocity * 2) + (self.v_velocity * 4) + self.a_velocity) / 7
+    #    return avg_vel # average velocity, with less weight
+    #    # given to velocity got from acceleration and more given to velocity publisher
     
 
     def updatePosition(self):
-        self.vel = self.getVelocity()
-        self.x = self.x + self.vel * cos(self.heading) * self.dt
-        self.y = self.y + self.vel * sin(self.heading) * self.dt
+        #self.vel = self.getVelocity()
+        x_dist = vincenty((self.start_lat, self.lon), (self.start_lat, self.start_lon))
+        y_dist = vincenty((self.lat, self.lon), (self.start_lat, self.lon))
+        point = (x_dist * 1000, y_dist * 1000)
+        self.g_y = point[0]
+        self.g_x = point[1]
+
+        self.v_x = self.x + self.v_velocity * cos(self.heading) * self.dt
+        self.v_y = self.y + self.v_velocity * sin(self.heading) * self.dt
+
+        self.x = (self.g_x + self.v_x) / 2.0
+        self.y = (self.g_y + self.v_y) / 2.0
         #print("x: " + str(self.x))
         #print("y: " + str(self.y))
     
@@ -101,8 +119,8 @@ class LocalizationHandler:
 
     # and publish!
     def getMessage(self):
-        self.time += 0.1 # timer_callback() calls at speed of .1s
         self.updatePosition() # necessary to actually calculate x and y
+        self.time += 0.10 # timer_callback() calls at speed of .1s
         self.updateTarget() # so we can, you know, try to get bonus waypoints
         positionMessage = Position()
         positionMessage.x = self.x

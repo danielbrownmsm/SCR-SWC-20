@@ -39,3 +39,6 @@ class WaypointsHandler:
     
     def getWaypointsXY(self):
         return self.converted_goal_points
+
+    def getStartPoint(self):
+        return self.start_point

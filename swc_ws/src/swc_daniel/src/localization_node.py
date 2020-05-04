@@ -37,14 +37,14 @@ def main():
     wh = WH.WaypointsHandler(waypoints.waypoints)
     print("Converting waypoints...")
     # pass those into the localization handler
-    lh = LH.LocalizationHandler(wh.getWaypointsXY())
+    lh = LH.LocalizationHandler(wh.getWaypointsXY(), wh.getStartPoint())
     print("We have localization!")
 
     # Create a timer that calls timer_callback() with a period of 0.1
     rospy.Timer(rospy.Duration(0.1), timer_callback)
 
     # get sensor data
-    #rospy.Subscriber("/sim/gps", Gps, lh.gpsCallback)
+    rospy.Subscriber("/sim/gps", Gps, lh.gpsCallback)
     rospy.Subscriber("/sim/control", Control, lh.controlCallback)
     rospy.Subscriber("/sim/imu", Imu, lh.imuCallback)
     rospy.Subscriber("/sim/velocity", Float32, lh.velocityCallback)
