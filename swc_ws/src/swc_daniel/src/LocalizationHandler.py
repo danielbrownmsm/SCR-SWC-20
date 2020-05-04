@@ -10,7 +10,7 @@ class LocalizationHandler:
         self.goal_x = 0.0
         self.goal_y = 0.0
 
-        self.margin = 0.1 # *subject to change*
+        self.margin = 1 # *subject to change*
 
         self.dt = 0.1 # *subject to change*
 
@@ -81,7 +81,10 @@ class LocalizationHandler:
         self.prev_acceleration = self.acceleration # so, you know, we actually update
 
     def getVelocity(self):
-        return ((self.c_velocity * 2) + (self.v_velocity * 4) + self.a_velocity) / 7 # average velocity, with less weight
+        #avg_vel = ((self.c_velocity * 2) + (self.v_velocity * 4) + self.a_velocity) / 7
+        avg_vel = (self.v_velocity + self.a_velocity) / 2
+        print(avg_vel)
+        return avg_vel # average velocity, with less weight
         # given to velocity got from acceleration and more given to velocity publisher
     
 

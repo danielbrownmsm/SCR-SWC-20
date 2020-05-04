@@ -55,7 +55,7 @@ class ControlHandler:
         except ZeroDivisionError:
             #print("[" + str(self.time) + "] dcube05 tried to divide by zero")
             return 0
-        print(error)
+        #print(error)
         return error #* self.angle_p # PIDs are too slow
     
     # gives us the speed we should drive at
