@@ -1,4 +1,4 @@
-from math import atan, sqrt, fabs, degrees
+from math import asin, sqrt, fabs, degrees
 from swc_msgs.msg import Control
 
 class ControlHandler:
@@ -15,6 +15,7 @@ class ControlHandler:
         # these comments just break the code into managable chunks
         self.x_dist = 0.0
         self.y_dist = 0.0
+        self.dist = 0.0 # cause sin not tan
 
         # these have been tested. NOT. NO. TEST PLEASE. MAKE WORK GOOD.
         self.angle_p = 8
@@ -46,17 +47,27 @@ class ControlHandler:
         self.y_dist = self.goal_y - self.y
 
         self.time = data.time
+        
+        #print("=========goal then curr==========")
+        #print("x: " + str(self.goal_x) + " y: " + str(self.goal_y))
     
     # gives us angle we need to turn to using trig
     def getTurnAngle(self):
         try:
-            needed = degrees(atan(self.x_dist / self.y_dist)) # SOHCAHTOA
+            needed = degrees(asin(self.y_dist / self.dist)) # SOHCAHTOA
             error = fabs(needed) - self.heading
+            error *= self.angle_p
         except ZeroDivisionError:
             #print("[" + str(self.time) + "] dcube05 tried to divide by zero")
             return 0
-        #print(error)
-        return error #* self.angle_p # PIDs are too slow
+        print(error)
+        # so we don't just go in circles
+        if error > 5:
+            return 5
+        elif error < -5:
+            return -5
+        
+        return error
     
     # gives us the speed we should drive at
     def getSpeed(self):
@@ -64,7 +75,8 @@ class ControlHandler:
             return -8 # we need to get outta here
         
         # else we good
-        val = sqrt(self.x_dist ** 2 + self.y_dist ** 2) * self.speed_p # pythagorean theorem plus a P controller
+        self.dist = sqrt(self.x_dist ** 2 + self.y_dist ** 2)
+        val = self.dist * self.speed_p # pythagorean theorem plus a P controller
         if val > 8:
             return 8 # to not possibly overflow anything (that won't happen, riiiiiight?)
         elif val < 2:

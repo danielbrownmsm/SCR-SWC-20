@@ -30,7 +30,7 @@ class WaypointsHandler:
             # (x1, y1, x1, y2) except no so (y1, x1, y2, x2)
             y_dist = vincenty((data[loop_var].latitude, data[loop_var].longitude), (self.start_point.latitude, data[loop_var].longitude))
             
-            point = (x_dist * 1000, y_dist * 1000) # it returns kilometers, and we want meters
+            point = (x_dist * 1000.0, y_dist * 1000.0) # it returns kilometers, and we want meters
             print("Converted: " + str(point[0]) + ", " + str(point[1]))
             converted_points.append(point)
 

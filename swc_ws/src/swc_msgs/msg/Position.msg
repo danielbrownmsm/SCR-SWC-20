@@ -1,6 +1,6 @@
 float32 x
 float32 y
 float32 heading
-float32 goal_x
-float32 goal_y
+float64 goal_x
+float64 goal_y
 float32 time
