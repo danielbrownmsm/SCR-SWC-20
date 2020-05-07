@@ -18,12 +18,18 @@ class Robot():
         self.changeTarget(self.target_index) # to set first goal
         
         self.atBoundaryLat = "none" # GPS boudaries
-        self.atBoundaryLon = "none"# top/bottom and right/left
+        self.atBoundaryLon = "none" # top/bottom and right/left
         
         self.curr_angle = 0.0 # initialize, amiright?
 
         self.speedP = 175000 # gains for the P controllers
         self.angleP = 10 # angle is a bit whack, speed just go fast lol
+
+        self.min_angle = 0
+        self.max_angle = 45
+
+        self.min_speed = 2
+        self.max_speed = 8
 
     # hacky timer stuff for logging purposes
     def updateTime(self):
@@ -112,11 +118,11 @@ class Robot():
 
     # final function call for speed
     def getDesiredSpeed(self):
-        if (self.getDist() * self.speedP) < 1:
+        if (self.getDist() * self.speedP) < self.min_speed:
             print("[" + str(self.time) + "] ROBOT GO WHIR")
-            return 2
-        elif (self.getDist() * self.speedP) > 8:
-            return 8 # return max speed. doesn't really do anything but it might
+            return self.min_speed
+        elif (self.getDist() * self.speedP) > self.max_speed:
+            return self.max_speed # return max speed. doesn't really do anything but it might
         return self.getDist() * self.speedP # Just go fast lol
         
     # final function call for angle
@@ -129,7 +135,13 @@ class Robot():
         if self.atBoundaryLat == "top" or self.atBoundaryLat == "bottom":
             return 20 # works barely
         
-        return (self.curr_angle - self.getNeededAngle()) * self.angleP # return the error times gain
+        val = (self.curr_angle - self.getNeededAngle()) * self.angleP # return the error times gain
+
+        if val > self.max_angle:
+            return self.max_angle
+        elif val < self.min_angle:
+            return self.min_angle
+        return val
         
     # function that actually gives the control() message
     def getAction(self):

@@ -1,61 +1,33 @@
 import random
 
 # a class to represent a robot, for genetic evolution of robots
-class Robot():
-	def __init__(self, minSpeed, speedP, angleP, time_):
+class GeneticRobot():
+	def __init__(self, minSpeed, maxSpeed, speedP, minAngle, maxAngle, angleP, timerCallback, waypoint_threshold):
 		self.minSpeed = minSpeed
+		self.maxSpeed = maxSpeed
 		self.speedP = speedP
+
+		self.minAngle = minAngle
+		self.maxAngle = maxAngle
 		self.angleP = angleP
-		self.time_ = time_
+
+		self.timerCallback = timerCallback
+		self.waypoint_threshold = waypoint_threshold
+		
+		self.time_ = 0
+	
+	def setTime(self, x):
+		self.time_ = x
 	
 	def __lt__(self, other): # magic methods go brrr
 		return self.time_ < other.time_ # we sort by time, lowest wins
-		
 
-# handles evolving all our robots
-class Controller():
-	def __init__(self, robots):
-		self.robots = robots
-		self.new_robots = []
-	
-	# changes some values by a little bit
-	def mutate(self):
-		for robot in self.robots:
-			x = random.randint(0, 100)
-			if x % 2 == 0: # if the number is even
-				continue # skip it. this yields 50% chance of mutation. Probably too high
-			robot.minSpeed += random.random() # this number could be decimal optimized
-			robot.speedP += random.randint(-50, 50) # we need this number to be big, so change it by a lot
-			robot.angleP += random.random() # same for this
-		return
-	
-	def contest(self):
-		self.robots.sort() # calls the __lt__ thing we made
-		# THIS MIGHT SORT IN REVERSE SO WE ARE DELETING TOP 25% (BECAUSE LOWEST SCORE SHOULD WIN, BUT I THINK
-		# WE'RE DOING HIGHEST SCORE WINS HERE. SO DOUBLE CHECK)
-		self.robots = self.robots[:-int(len(self.robots) * 0.25)] # *should* remove worst 25%
-	
-	def breed(self):
-		for i in range(0, len(self.robots)): # for however many robots we have
-			minSpeed = self.robots[random.randint(0, len(self.robots))].minSpeed # assign new values to them from existing robots
-			speedP = self.robots[random.randint(0, len(self.robots))].speedP # this represents them breeding, to a degree
-			angleP = self.robots[random.randint(0, len(self.robots))].angleP
-			# yes, this allows for some robots to have multiple children or to have none at all. 
-			# Boo hoo. If they're good they'll live long enough to have children
-			self.new_robots[i] = [minSpeed, speedP, angleP]
-		return
+with open("values.txt", 'r') as vf:
+	values = vf.read()
 
-# run program from bash script, this happens:
-with open('robots.txt', 'r') as f:
-	values = f.read()
-#values.handle_the_data_by_converting_into_list_of_GeneRobot_instances(NaN)
-controller = Controller(values)
+robot = GeneticRobot(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7])
 
-controller.mutate()
-controller.contest()
-controller.breed()
+with open("results.txt", 'r') as rf:
+	result = rf.read()
 
-# the bash script writes... AH SCREW IT DINNER
-with open('robots.txt', 'w') as ff:
-	ff.write(controller.new_robots)
-# and then it'll loop in the script so we good here.
+robot.setTime(result)
