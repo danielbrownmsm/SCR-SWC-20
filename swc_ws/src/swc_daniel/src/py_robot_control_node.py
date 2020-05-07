@@ -25,6 +25,10 @@ def main():
     global robot # yes, bad practice. Too bad. deal with it. After all, you're most likely me.
     # Either that, or you're Justin because I asked for a code review
     # Hi Justin! (Asking Justin > reading the docs/SO/CD) => True
+
+    with open('values.txt') as f:
+        values = f.read()
+    print(values)
     
     # Initalize our node in ROS
     rospy.init_node('py_robot_control_node')
