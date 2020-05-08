@@ -3,5 +3,5 @@
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
 
     <!-- Robot control node (Python2) -->
-    <node pkg="swc_daniel" type="py_robot_control_node.py" name="py_robot_control_node" output="screen" />
+    <node pkg="swc_daniel" type="py_robot_control_node.py" name="py_robot_control_node" output="screen" required="true" />
 </launch>

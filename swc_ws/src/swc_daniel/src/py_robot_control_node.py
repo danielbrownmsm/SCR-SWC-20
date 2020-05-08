@@ -26,28 +26,28 @@ def main():
     # Either that, or you're Justin because I asked for a code review
     # Hi Justin! (Asking Justin > reading the docs/SO/CD) => True
 
-    with open('values.txt') as f:
-        values = f.read()
-    print(values)
+    with open("values.txt") as f:
+        values = f.read().strip().split(",")
+    #print(values)
     
     # Initalize our node in ROS
-    rospy.init_node('py_robot_control_node')
+    rospy.init_node("py_robot_control_node")
 
     # Create a Publisher that we can use to publish messages to the /sim/control topic
     _control_pub = rospy.Publisher("/sim/control", Control, queue_size=1)
 
     # Wait for Waypoints service and then request waypoints
-    rospy.wait_for_service('/sim/waypoints')
-    waypoints = rospy.ServiceProxy('/sim/waypoints', Waypoints)()
+    rospy.wait_for_service("/sim/waypoints")
+    waypoints = rospy.ServiceProxy("/sim/waypoints", Waypoints)()
 
     # Define where we need to go (order is: start, bonus, bonus, bonus, finish with bonusses roughly in 
     # order of how far away they are)
     # create instance of Robot class
     print("We're in")
-    robot = r.Robot(waypoints.waypoints)
+    robot = r.Robot(waypoints.waypoints, values)
 
     # Create a timer that calls timer_callback() with a period of read the thing
-    rospy.Timer(rospy.Duration(0.07), timer_callback)
+    rospy.Timer(rospy.Duration(values[6]), timer_callback)
     rospy.Timer(rospy.Duration(0.01), timer_callback2)
 
     # get sensor data
@@ -57,7 +57,7 @@ def main():
     # Let ROS take control of this thread until a ROS wants to kill
     rospy.spin()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         main()
     except rospy.ROSInterruptException:

@@ -3,13 +3,14 @@ import math
 import tf
 
 class Robot():
-    def __init__(self, waypoints):
+    def __init__(self, waypoints, values):
+        # order is minSpeed, maxSpeed, speedP, minAngle, maxAngle, angleP, timerCallback, waypoint_threshold
         self.time = 0.0
         
         self.curr_lat = waypoints[0].latitude # have us start out at first location
         self.curr_lon = waypoints[0].longitude # to prevent driving backwards really fast at sim start
         
-        self.waypoint_threshold = 0.00001 # how close we have to be to count a waypoint as reached
+        self.waypoint_threshold = values[7] # how close we have to be to count a waypoint as reached
         self.lat_error = 0.0 # diff between current and goal latitude
         self.lon_error = 0.0 # same here but for longitude
         
@@ -22,14 +23,14 @@ class Robot():
         
         self.curr_angle = 0.0 # initialize, amiright?
 
-        self.speedP = 175000 # gains for the P controllers
-        self.angleP = 10 # angle is a bit whack, speed just go fast lol
+        self.speedP = values[2] # gains for the P controllers
+        self.angleP = values[5] # angle is a bit whack, speed just go fast lol
 
-        self.min_angle = 0
-        self.max_angle = 45
+        self.min_angle = values[3]
+        self.max_angle = values[4]
 
-        self.min_speed = 2
-        self.max_speed = 8
+        self.min_speed = values[0]
+        self.max_speed = values[1]
 
     # hacky timer stuff for logging purposes
     def updateTime(self):
