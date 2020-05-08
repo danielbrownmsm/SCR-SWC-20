@@ -1,4 +1,4 @@
-import random, os, re
+import random, os, re, time
 
 # a class to represent a robot, for genetic evolution of robots
 class GeneticRobot():
@@ -24,7 +24,7 @@ class GeneticRobot():
 		return self.time_ < other.time_ # we sort by time, lowest wins
 	
 	def mutate(self):
-		x = random.randint(0, 100):
+		x = random.randint(0, 100)
 		# 1% chance of mutation
 		if x == 1:
 			x = random.randint(0, 7)
@@ -59,12 +59,15 @@ class GeneticRobot():
 	
 	def fitness(self):
 		with open("values.txt", "w") as vf:
-			vf.write(self.getValues)
-		os.system("cd ~")
-		os.system("cd Documents/GitHub/SCR-SWC-20/src")
-		os.system("roslaunch swc_daniel swc_daniel.launch")
+			x = self.getValues()
+			vf.write(str(x))
+		#os.system("cd ~")
+		#os.system("cd Documents/GitHub/SCR-SWC-20/src")
+		os.system("/mnt/c/Users/Brown_Family01/Downloads/SCR_SWC_20_SIM_5.0_LINUX_HEADLESS/SCRSWC20.x86_64 & roslaunch swc_daniel swc_daniel.launch")
 		# and then launch simulator as well
-		time.sleep(300) # wait for roslaunch to run and sim to close
+		time.sleep(60) # wait for roslaunch to run and sim to close
+		# minute per robot * 100 robots * 10(?) generations seems reasonable enough
+		os.system("rosnode kill --all")
 		with open("results.txt") as rf:
 			try:
 				self.score = float(re.search(r"(?<=Score: )\d+\.*\d*", rf.read()).group()) # matches 0.1, 1., and 1 if preceded by Score: 
@@ -79,13 +82,14 @@ class GeneticRobot():
 
 class Controller():
 
-	self.generation = 0
 
 	def __init__(self):
-		self.population = []
+		self.generation = 0
+		self.population = [None] * 100
 		self.breed_pool = []
 	
 	def populate(self):
+		print("Populating...")
 		for x in range(0, 100): # 100 should be good for now, at 300s per robot
 		#self, minSpeed, maxSpeed, speedP, minAngle, maxAngle, angleP, timerCallback, waypoint_threshold
 			minSpeed = random.randint(0, 4)

@@ -21,13 +21,17 @@ def timer_callback(event):
     _control_pub.publish(robot.getAction())
 
 def main():
+    print("We're in")
     global _control_pub
     global robot # yes, bad practice. Too bad. deal with it. After all, you're most likely me.
     # Either that, or you're Justin because I asked for a code review
     # Hi Justin! (Asking Justin > reading the docs/SO/CD) => True
 
-    with open("values.txt") as f:
-        values = f.read().strip().split(",")
+    with open("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/values.txt") as f:
+        values = f.read().replace("]", "").replace("[", "").strip().split(",") # long chain that gives us list of formated stuff
+        for x in range(0, len(values)): # convert to float
+            print("Converting: " + values[x])
+            values[x] = float(values[x]) # so class can use them
     #print(values)
     
     # Initalize our node in ROS
@@ -43,7 +47,7 @@ def main():
     # Define where we need to go (order is: start, bonus, bonus, bonus, finish with bonusses roughly in 
     # order of how far away they are)
     # create instance of Robot class
-    print("We're in")
+    print("Waypoints aquired!")
     robot = r.Robot(waypoints.waypoints, values)
 
     # Create a timer that calls timer_callback() with a period of read the thing

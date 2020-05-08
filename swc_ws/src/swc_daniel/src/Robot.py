@@ -130,18 +130,19 @@ class Robot():
     def getDesiredAngle(self):
         # check boundaries
         if self.atBoundaryLon == "left":
-            return 30
+            return 20
         elif self.atBoundaryLon == "right":
-            return -30
+            return -20
         if self.atBoundaryLat == "top" or self.atBoundaryLat == "bottom":
             return 20 # works barely
         
         val = (self.curr_angle - self.getNeededAngle()) * self.angleP # return the error times gain
-
-        if val > self.max_angle:
-            return self.max_angle
-        elif val < self.min_angle:
-            return self.min_angle
+        #if val > self.max_angle:
+        #    print("[" + str(self.time) + "] Too much angle")
+        #    return self.max_angle
+        #elif val < self.min_angle:
+        #    print("[" + str(self.time) + "] Not enough angle")
+        #    return self.min_angle
         return val
         
     # function that actually gives the control() message
