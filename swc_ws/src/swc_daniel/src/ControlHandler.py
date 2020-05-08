@@ -54,9 +54,10 @@ class ControlHandler:
     # gives us angle we need to turn to using trig
     def getTurnAngle(self):
         try:
-            needed = degrees(asin(self.y_dist / self.dist)) # SOHCAHTOA
-            error = fabs(needed) - self.heading
-            error *= self.angle_p
+            self.dist = sqrt(self.x_dist ** 2 + self.y_dist ** 2)
+            needed = asin(self.x_dist / self.dist) # SOHCAHTOA except what?
+            error = needed - self.heading
+            #error *= self.angle_p
         except ZeroDivisionError:
             #print("[" + str(self.time) + "] dcube05 tried to divide by zero")
             return 0
