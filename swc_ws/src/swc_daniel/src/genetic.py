@@ -62,12 +62,12 @@ class GeneticRobot():
 			vf.write(str(x))
 		#os.system("cd ~")
 		#os.system("cd Documents/GitHub/SCR-SWC-20/src")
-		os.system("/mnt/c/Users/Brown_Family01/Documents/Github/SCR-SWC-20/swc_ws/SCR_SWC_20_SIM_5.0_LINUX_HEADLESS/SCRSWC20.x86_64 & roslaunch swc_daniel swc_daniel.launch")
+		os.system("/mnt/c/Users/Brown_Family01/Documents/SCR_SWC_20_SIM_5.0_WIN/SCRSWC20.exe & roslaunch swc_daniel swc_daniel.launch")
 		# and then launch simulator as well
 		#time.sleep(60) # wait for roslaunch to run and sim to close
 		# minute per robot * 100 robots * 10(?) generations seems reasonable enough
-		os.system("rosnode kill --all")
-		with open("/mnt/c/Users/Brown_Family01/Documents/Github/SCR-SWC-20/swc_ws/SCR_SWC_20_SIM_5.0_LINUX_HEADLESS/results.txt") as rf:
+		#os.system("rosnode kill --all")
+		with open("/mnt/c/Users/Brown_Family01/Documents/SCR_SWC_20_SIM_5.0_WIN/results.txt") as rf:
 			try:
 				self.score = float(re.search(r"(?<=Score: )\d+\.*\d*", rf.read()).group()) # matches 0.1, 1., and 1 if preceded by Score: 
 			except Exception:
@@ -80,26 +80,24 @@ class GeneticRobot():
 		
 
 class Controller():
-
-
 	def __init__(self):
 		self.generation = 0
-		self.population = [None] * 100
+		self.population = []
 		self.breed_pool = []
 	
-	def populate(self):
-		print("Populating...")
-		for x in range(0, 100): # 100 should be good for now, at 300s per robot
-		#self, minSpeed, maxSpeed, speedP, minAngle, maxAngle, angleP, timerCallback, waypoint_threshold
-			minSpeed = random.randint(0, 4)
-			maxSpeed = random.randint(6, 8)
-			speedP = random.randint(100000, 200000)
-			minAngle = random.randint(1, 10)
-			maxAngle = random.randint(30, 45)
-			angleP = random.randint(5, 20)
-			timerCallback = round(random.uniform(0.01, 0.1), 4)
-			waypoint_threshold = 0.00001
-			self.population[x] = GeneticRobot(minSpeed, maxSpeed, speedP, minAngle, maxAngle, angleP, timerCallback, waypoint_threshold)
+	#def populate(self):
+	#	print("Populating...")
+	#	for x in range(0, 100): # 100 should be good for now, at 300s per robot
+	#	#self, minSpeed, maxSpeed, speedP, minAngle, maxAngle, angleP, timerCallback, waypoint_threshold
+	#		minSpeed = random.randint(0, 4)
+	#		maxSpeed = random.randint(6, 8)
+	#		speedP = random.randint(100000, 200000)
+	#		minAngle = random.randint(1, 10)
+	#		maxAngle = random.randint(30, 45)
+	#		angleP = random.randint(5, 20)
+	#		timerCallback = round(random.uniform(0.01, 0.1), 4)
+	#		waypoint_threshold = 0.00001
+	#		self.population[x] = GeneticRobot(minSpeed, maxSpeed, speedP, minAngle, maxAngle, angleP, timerCallback, waypoint_threshold)
 	
 	def loop(self):
 		print("Testing...")
@@ -109,28 +107,54 @@ class Controller():
 		print("Assembling...")
 		for robot in self.population:
 			n = robot.score
-			for x in range(0, n):
+			for x in xrange(0, n): # xrange() is slightly faster and we need speeeeeeeeeeeeed
 				self.breed_pool.append(self.robot)
 		
 		print("Breeding...")
-		for robot in self.breed_pool: # for every robot
+		x = 0
+		for robot in self.population: # for every robot
 			a = random.randint(0, len(self.breed_pool))
 			b = random.randint(0, len(self.breed_pool))
-			self.breed_pool[a].breed(self.breed_pool[b]) # breed robot at loc a with robot at loc b
+			robot = self.breed_pool[a].breed(self.breed_pool[b]) # breed robot at loc a with robot at loc b and make the population that
 		
 		self.population.sort()
 		print("Generation: " + str(self.generation))
 		print("Best Score: " + str(self.population[0].score))
 		print("Worst Score: " + str(self.population[-1].score))
 
-		with open("best.txt", "a") as bf: # append values
+		with open("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/best.txt", "a") as bf: # append values
 			x = self.population[0].getValues()
 			x += " ==> " + str(self.population[0].score)
 			bf.write(x)
+		
+		with open("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/all_values.txt", "w") as f:
+			all_robots = []
+			for robot in self.population:
+				x = robot.getValues()
+				all_robots.append(x)
+			f.write(str(all_robots))
 		self.generation += 1
 
 print("Initialized...")
 controller = Controller()
-controller.populate()
+
+# read from all_values.txt and put into list of lists of numbers
+print("Reading file...")
+all_values = []
+with open("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/all_values.txt", "r") as f:
+	values = f.readlines() # get list of lines
+	for value in values: # iterate over that list
+		more_values = value.replace("[", "").replace("]", "").strip().split(",") # to get a list of values
+		for string in more_values:
+			string = float(string) # convert to floats
+		all_values.append(more_values) # put that into all_values
+
+print("Creating list from file...")
+for robot in all_values:
+	x = GeneticRobot(robot[0], robot[1], robot[2], robot[3], robot[4], robot[5], robot[6], robot[7])
+	controller.population.append(x)
+
+print("Entering loop...")
+#controller.populate()
 while True:
 	controller.loop()

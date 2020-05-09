@@ -1,6 +1,6 @@
 from swc_msgs.msg import Control
-import math
-import tf
+import math, tf
+import os
 
 class Robot():
     def __init__(self, waypoints, values):
@@ -35,6 +35,8 @@ class Robot():
     # hacky timer stuff for logging purposes
     def updateTime(self):
         self.time += 0.01
+        if self.time > 30:
+            os.system("rosnode kill --all")
         
     # updates the robot's current position
     def updateCoords(self, gps):
