@@ -14,14 +14,13 @@ class GeneticRobot():
 		self.timerCallback = timerCallback
 		self.waypoint_threshold = waypoint_threshold
 
-		self.missed_waypoint = False		
-		self.time_ = 0
+		self.score = 0
 	
-	def setTime(self, new_time):
-		self.time_ = new_time
+	def setScore(self, new_score):
+		self.score = new_score
 	
 	def __lt__(self, other): # magic methods go brrr
-		return self.time_ < other.time_ # we sort by time, lowest wins
+		return self.score < other.score # we sort by time, lowest wins
 	
 	def mutate(self):
 		x = random.randint(0, 100)
@@ -63,12 +62,12 @@ class GeneticRobot():
 			vf.write(str(x))
 		#os.system("cd ~")
 		#os.system("cd Documents/GitHub/SCR-SWC-20/src")
-		os.system("/mnt/c/Users/Brown_Family01/Downloads/SCR_SWC_20_SIM_5.0_LINUX_HEADLESS/SCRSWC20.x86_64 & roslaunch swc_daniel swc_daniel.launch")
+		os.system("/mnt/c/Users/Brown_Family01/Documents/Github/SCR-SWC-20/swc_ws/SCR_SWC_20_SIM_5.0_LINUX_HEADLESS/SCRSWC20.x86_64 & roslaunch swc_daniel swc_daniel.launch")
 		# and then launch simulator as well
-		time.sleep(60) # wait for roslaunch to run and sim to close
+		#time.sleep(60) # wait for roslaunch to run and sim to close
 		# minute per robot * 100 robots * 10(?) generations seems reasonable enough
 		os.system("rosnode kill --all")
-		with open("results.txt") as rf:
+		with open("/mnt/c/Users/Brown_Family01/Documents/Github/SCR-SWC-20/swc_ws/SCR_SWC_20_SIM_5.0_LINUX_HEADLESS/results.txt") as rf:
 			try:
 				self.score = float(re.search(r"(?<=Score: )\d+\.*\d*", rf.read()).group()) # matches 0.1, 1., and 1 if preceded by Score: 
 			except Exception:
@@ -98,7 +97,7 @@ class Controller():
 			minAngle = random.randint(1, 10)
 			maxAngle = random.randint(30, 45)
 			angleP = random.randint(5, 20)
-			timerCallback = random.uniform(0.01, 0.1)
+			timerCallback = round(random.uniform(0.01, 0.1), 4)
 			waypoint_threshold = 0.00001
 			self.population[x] = GeneticRobot(minSpeed, maxSpeed, speedP, minAngle, maxAngle, angleP, timerCallback, waypoint_threshold)
 	
@@ -125,9 +124,12 @@ class Controller():
 		print("Worst Score: " + str(self.population[-1].score))
 
 		with open("best.txt", "a") as bf: # append values
-			bf.write(self.population[0].getValues())
+			x = self.population[0].getValues()
+			x += " ==> " + str(self.population[0].score)
+			bf.write(x)
 		self.generation += 1
 
+print("Initialized...")
 controller = Controller()
 controller.populate()
 while True:
