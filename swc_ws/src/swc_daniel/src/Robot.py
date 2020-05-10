@@ -35,7 +35,7 @@ class Robot():
     # hacky timer stuff for logging purposes
     def updateTime(self):
         self.time += 0.01
-        if self.time > 30:
+        if self.time > 25:
             os.system("rosnode kill --all")
         
     # updates the robot's current position
@@ -139,12 +139,12 @@ class Robot():
             return 20 # works barely
         
         val = (self.curr_angle - self.getNeededAngle()) * self.angleP # return the error times gain
-        #if val > self.max_angle:
-        #    print("[" + str(self.time) + "] Too much angle")
-        #    return self.max_angle
+        if math.fabs(val) > self.max_angle:
+            print("[" + str(self.time) + "] Too much angle")
+            return math.copysign(self.max_angle, val)
         #elif val < self.min_angle:
-        #    print("[" + str(self.time) + "] Not enough angle")
-        #    return self.min_angle
+        #   print("[" + str(self.time) + "] Not enough angle (but we ain't gonna do anything 'bout it")
+        #   return math.copysign(self.min_angle, val)
         return val
         
     # function that actually gives the control() message

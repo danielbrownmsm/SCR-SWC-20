@@ -1,4 +1,4 @@
-import random, os, re, time
+import random, os, re, time, math
 
 # a class to represent a robot, for genetic evolution of robots
 class GeneticRobot():
@@ -67,12 +67,13 @@ class GeneticRobot():
 		#time.sleep(60) # wait for roslaunch to run and sim to close
 		# minute per robot * 100 robots * 10(?) generations seems reasonable enough
 		#os.system("rosnode kill --all")
-		with open("/mnt/c/Users/Brown_Family01/Documents/SCR_SWC_20_SIM_5.0_WIN/results.txt") as rf:
+		with open("results.txt", "r") as rf:
 			try:
 				self.score = float(re.search(r"(?<=Score: )\d+\.*\d*", rf.read()).group()) # matches 0.1, 1., and 1 if preceded by Score: 
+				print("Score: " + str(self.score))
 			except Exception:
-				print("Error occured:")
-				print(Exception)
+				print("Did Not Finish (or REGEX is messed up)")
+				#print(Exception)
 				self.score = 10000000
 
 	def getValues(self):
@@ -101,14 +102,17 @@ class Controller():
 	
 	def loop(self):
 		print("Testing...")
+		x = 1
 		for robot in self.population:
+			print("Gen " + str(self.generation) + "Robot " + str(x))
+			x += 1
 			robot.fitness()
 		
 		print("Assembling...")
 		for robot in self.population:
-			n = robot.score
-			for x in xrange(0, n): # xrange() is slightly faster and we need speeeeeeeeeeeeed
-				self.breed_pool.append(self.robot)
+			n = round((1 / robot.score) * 1000, 0) # smaller score, larger number. Larger score, smaller number
+			for x in xrange(0, int(n)): # xrange() is slightly faster and we need speeeeeeeeeeeeed
+				self.breed_pool.append(robot)
 		
 		print("Breeding...")
 		x = 0

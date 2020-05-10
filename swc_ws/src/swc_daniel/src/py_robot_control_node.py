@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 
 import rospy
-import random
 import Robot as r
 from swc_msgs.msg import Control
 from swc_msgs.msg import Gps
 from sensor_msgs.msg import Imu
-from sensor_msgs.msg import CompressedImage
-from sensor_msgs.msg import LaserScan
-from std_msgs.msg import Bool
 from swc_msgs.srv import Waypoints
 
 _control_pub = None
@@ -28,11 +24,16 @@ def main():
     # Hi Justin! (Asking Justin > reading the docs/SO/CD) => True
 
     with open("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/values.txt") as f:
-        values = f.read().replace("]", "").replace("[", "").strip().split(",") # long chain that gives us list of formated stuff
-        for x in range(0, len(values)): # convert to float
-            print("Converting: " + values[x])
-            values[x] = float(values[x]) # so class can use them
-    #print(values)
+        values = f.read().replace("]", "").replace("[", "").strip().replace(" ", "").replace("'", "").replace("\"", "").split(",") # long chain that gives us list of formated stuff
+        print(values)
+        try:
+            values = [x.strip() for x in values]
+            #values = [i.strip() for i in values]
+            values = [float(x) for x in values]
+            print(values)
+        except Exception:
+            print("Error converting values to floats")
+            print(Exception)
     
     # Initalize our node in ROS
     rospy.init_node("py_robot_control_node")
