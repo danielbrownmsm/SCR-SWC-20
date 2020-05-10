@@ -1,4 +1,6 @@
-import random, os, re, time, math
+import random
+import os
+import re
 
 # a class to represent a robot, for genetic evolution of robots
 class GeneticRobot():
