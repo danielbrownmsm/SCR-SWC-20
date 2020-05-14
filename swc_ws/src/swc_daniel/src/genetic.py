@@ -2,19 +2,25 @@ import random
 import os
 import re
 
+def convert(x):
+	#x = x.strip()
+	#x = x.replace("'", "").replace("\"", "").replace(" ", "")
+	#x = float(x)
+	return x
+
 # a class to represent a robot, for genetic evolution of robots
 class GeneticRobot():
 	def __init__(self, minSpeed, maxSpeed, speedP, minAngle, maxAngle, angleP, timerCallback, waypoint_threshold):
-		self.minSpeed = minSpeed
-		self.maxSpeed = maxSpeed
-		self.speedP = speedP
+		self.minSpeed = convert(minSpeed)
+		self.maxSpeed = convert(maxSpeed)
+		self.speedP = convert(speedP)
 
-		self.minAngle = minAngle
-		self.maxAngle = maxAngle
-		self.angleP = angleP
+		self.minAngle = convert(minAngle)
+		self.maxAngle = convert(maxAngle)
+		self.angleP = convert(angleP)
 
-		self.timerCallback = timerCallback
-		self.waypoint_threshold = waypoint_threshold
+		self.timerCallback = convert(timerCallback)
+		self.waypoint_threshold = convert(waypoint_threshold)
 
 		self.score = 0
 	
@@ -28,7 +34,7 @@ class GeneticRobot():
 		x = random.randint(0, 100)
 		# 1% chance of mutation
 		if x == 1:
-			x = random.randint(0, 7)
+			x = random.randint(0, 5)
 			if x == 0:
 				self.minSpeed += random.uniform(-1, 1)
 			elif x == 1:
@@ -41,13 +47,13 @@ class GeneticRobot():
 				self.maxAngle += random.uniform(-5, 5)
 			elif x == 5:
 				self.angleP += random.uniform(-1, 1)
-			elif x == 6:
-				self.timerCallback += random.uniform(-0.02, 0.02)
-				if self.timerCallback <= 0.01:
-					self.timerCallback = 0.02
-			elif x == 7:
-				# standard is 0.00001
-				self.waypoint_threshold += random.uniform(-0.000005, 0.000005)
+			#elif x == 6:
+			#	self.timerCallback += random.uniform(-0.02, 0.02)
+			#	if self.timerCallback <= 0.01:
+			#		self.timerCallback = 0.02
+			#elif x == 7:
+			#	# standard is 0.00001
+			#	self.waypoint_threshold += random.uniform(-0.000005, 0.000005)
 	
 	def breed(self, partner):
 		x = random.randint(0, 1)
@@ -62,20 +68,14 @@ class GeneticRobot():
 		with open("values.txt", "w") as vf:
 			x = self.getValues()
 			vf.write(str(x))
-		#os.system("cd ~")
-		#os.system("cd Documents/GitHub/SCR-SWC-20/src")
 		os.system("/mnt/c/Users/Brown_Family01/Documents/SCR_SWC_20_SIM_5.0_WIN/SCRSWC20.exe & roslaunch swc_daniel swc_daniel.launch")
-		# and then launch simulator as well
-		#time.sleep(60) # wait for roslaunch to run and sim to close
-		# minute per robot * 100 robots * 10(?) generations seems reasonable enough
-		#os.system("rosnode kill --all")
+
 		with open("results.txt", "r") as rf:
 			try:
 				self.score = float(re.search(r"(?<=Score: )\d+\.*\d*", rf.read()).group()) # matches 0.1, 1., and 1 if preceded by Score: 
 				print("Score: " + str(self.score))
 			except Exception:
 				print("Did Not Finish (or REGEX is messed up)")
-				#print(Exception)
 				self.score = 10000000
 
 	def getValues(self):
@@ -129,14 +129,16 @@ class Controller():
 		print("Worst Score: " + str(self.population[-1].score))
 
 		with open("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/best.txt", "a") as bf: # append values
-			x = self.population[0].getValues()
+			x = str(self.population[0].getValues())
 			x += " ==> " + str(self.population[0].score)
-			bf.write(x)
+			bf.write(str(x))
 		
 		with open("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/all_values.txt", "w") as f:
 			all_robots = []
 			for robot in self.population:
 				x = robot.getValues()
+				x = str(x)
+				x +="\n"
 				all_robots.append(x)
 			f.write(str(all_robots))
 		self.generation += 1
@@ -150,7 +152,7 @@ all_values = []
 with open("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/all_values.txt", "r") as f:
 	values = f.readlines() # get list of lines
 	for value in values: # iterate over that list
-		more_values = value.replace("[", "").replace("]", "").strip().split(",") # to get a list of values
+		more_values = value.replace("[", "").replace("]", "").replace("'", "").replace("\"", "").strip().split(",") # to get a list of values
 		for string in more_values:
 			string = float(string) # convert to floats
 		all_values.append(more_values) # put that into all_values
