@@ -1,12 +1,1 @@
-Team DarkTheme
-Date: 2020-05-12 08:50:42 -05
-Seed: 259568549
-
-Time: 25.000
-Multiplier: x7.200
-Score: 180.000
-
--- Multipliers --
-Obstacles Bonus: x15.00
-Noise Bonus: x0.60
-Waypoint 1 reached: x0.80
+Error: Did not start in 30 seconds!

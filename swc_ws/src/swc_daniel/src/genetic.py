@@ -119,8 +119,8 @@ class Controller():
 		print("Breeding...")
 		x = 0
 		for robot in self.population: # for every robot
-			a = random.randint(0, len(self.breed_pool))
-			b = random.randint(0, len(self.breed_pool))
+			a = random.randint(0, len(self.breed_pool)-1)
+			b = random.randint(0, len(self.breed_pool)-1)
 			robot = self.breed_pool[a].breed(self.breed_pool[b]) # breed robot at loc a with robot at loc b and make the population that
 		
 		self.population.sort()
@@ -134,13 +134,16 @@ class Controller():
 			bf.write(str(x))
 		
 		with open("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/all_values.txt", "w") as f:
+			f.write("")
+			# to make sure we have an empty file
+		
+
+		with open("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/all_values.txt", "a") as f:
 			all_robots = []
 			for robot in self.population:
-				x = robot.getValues()
-				x = str(x)
-				x +="\n"
-				all_robots.append(x)
-			f.write(str(all_robots))
+				f.write(str(robot.getValues()))
+				f.write("\n")
+
 		self.generation += 1
 
 print("Initialized...")

@@ -23,17 +23,18 @@ def main():
     # Either that, or you're Justin because I asked for a code review
     # Hi Justin! (Asking Justin > reading the docs/SO/CD) => True
 
-    with open("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/values.txt") as f:
-        values = f.read().replace("]", "").replace("[", "").strip().replace(" ", "").replace("'", "").replace("\"", "").split(",") # long chain that gives us list of formated stuff
-        print(values)
-        try:
-            values = [x.strip() for x in values]
-            #values = [i.strip() for i in values]
-            values = [float(x) for x in values]
-            print(values)
-        except Exception:
-            print("Error converting values to floats")
-            print(Exception)
+    # Genetic Algo stuff, uncomment when running evolutions
+    #with open("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/values.txt") as f:
+    #    values = f.read().replace("]", "").replace("[", "").strip().replace(" ", "").replace("'", "").replace("\"", "").split(",") # long chain that gives us list of formated stuff
+    #    print(values)
+    #    try:
+    #        values = [x.strip() for x in values]
+    #        #values = [i.strip() for i in values]
+    #        values = [float(x) for x in values]
+    #        print(values)
+    #    except Exception:
+    #        print("Error converting values to floats")
+    #        print(Exception)
     
     # Initalize our node in ROS
     rospy.init_node("py_robot_control_node")
@@ -49,7 +50,8 @@ def main():
     # order of how far away they are)
     # create instance of Robot class
     print("Waypoints aquired!")
-    robot = r.Robot(waypoints.waypoints, values)
+    # minSpeed, maxSpeed, speedP, minAngle, maxAngle, angleP, timerCallback, waypoint_threshol
+    robot = r.Robot(waypoints.waypoints, [1,8,175000,0.01,45,8,0.07,1e-05])
 
     # Create a timer that calls timer_callback() with a period of read the thing
     rospy.Timer(rospy.Duration(values[6]), timer_callback)
