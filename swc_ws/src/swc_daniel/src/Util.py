@@ -1,4 +1,7 @@
 from LocHandler import RobotState
+from math import sqrt
+
+#TODO DOCUMENT *EVERYTHING* LIKE *EVERYTHING EVERYTHING*
 
 class PurePursuit:
     def __init__(self, points):
@@ -6,11 +9,11 @@ class PurePursuit:
         self.fillPoints()
     
     def fillPoints(self):
-        #TODO
+        #TODO fill points
         pass
 
     def getNextHeading(self, curr_state):
-        #TODO
+        #TODO get next heading
         pass
 
 class PIDController:
@@ -21,16 +24,22 @@ class PIDController:
         
         self.error = 0
         self.lastError = 0
+        self.totalError = 0
 
         self.setpoint = 0
-        self.threshold = 0 #TODO
+        self.threshold = 0
+
+        self.time = 0
+        self.lasttime = 0
     
     def calculate(measurement, setpoint=self.setpoint):
-        #TODO write actual stuff
         self.error = measurement - setpoint
+        self.totalError += self.error
 
-        #TODO fix
-        return self.kP * self.error + self.kI * self.error + self.kD * self.error
+        output = self.error * self.kP + self.totalError * self.kI + (self.error - self.lastError) / (time.time() - self.lasttime) * self.kD
+        self.lastError = error
+        self.lastTime = time.time()
+        return output
 
     def setSetpoint(self):
         self.setpoint = setpoint
@@ -46,15 +55,26 @@ class PIDController:
         self.kI = I
         self.kD = D
 
-#TODO distance formula
-def dist():
-    pass
+#TODO write Kalman Filter or whatever
+class KalmanFilter:
+    def __init__(self):
+        pass
+
+    def update(self, val):
+        pass
+
+    def get(self):
+        return 0
+
+# Good ol' distance formula
+def dist(x1, y1, x2, y2):
+    return sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
 #TODO haversine
-def haversine():
-    pass
+def haversine(lat1, lon1, lat2, lon2):
+    return 0
 
-#TODO test this, doc this
+# Copied directly from whatever worked in Robot.py
 def getYaw(quat):
     explicit_quat = [quat.x, quat.y, quat.z, quat.w] # this is a workaround for types not playing nice
     return tf.transformations.euler_from_quaternion(explicit_quat)[2] # get a euler, yaw is second angle of it
