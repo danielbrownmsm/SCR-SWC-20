@@ -35,8 +35,8 @@ class Robot():
     # hacky timer stuff for logging purposes
     def updateTime(self):
         self.time += 0.01
-        if self.time > 25:
-            os.system("rosnode kill --all")
+        #if self.time > 25:
+        #    os.system("rosnode kill --all")
         
     # updates the robot's current position
     def updateCoords(self, gps):
