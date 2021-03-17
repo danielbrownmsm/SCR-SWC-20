@@ -8,3 +8,7 @@ build/
 
 # Ignore temp files from assorted programs
 *~
+
+# ingore compiled python files
+*.pyc
+#swc_ws/src/swc_daniel/src/LocHandler.pyc

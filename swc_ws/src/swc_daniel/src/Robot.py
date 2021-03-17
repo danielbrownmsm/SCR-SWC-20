@@ -1,6 +1,6 @@
 from swc_msgs.msg import Control
 import math, tf
-import os
+import os, time
 
 class Robot():
     def __init__(self, waypoints, values):
@@ -32,11 +32,10 @@ class Robot():
         self.min_speed = values[0]
         self.max_speed = values[1]
 
-    # hacky timer stuff for logging purposes
-    def updateTime(self):
-        self.time += 0.01
-        #if self.time > 25:
-        #    os.system("rosnode kill --all")
+        self.starttime = time.time()
+    
+    def log(self, message):
+        print("[" + str(time.time() - self.starttime) + "] " + message)
         
     # updates the robot's current position
     def updateCoords(self, gps):
@@ -48,17 +47,14 @@ class Robot():
     #  and handle goal waypoint stuff
     def updateTarget(self):
         if self.targetReached() and self.target_index == 1: # if we're past 1st waypoint
-            print("[" + str(self.time) + "] Waypoint 1 reached!")
-            self.target_index += 1 # go to next waypoint
-            self.changeTarget(self.target_index)
+            self.log("Waypoint 1 reached!")
         elif self.targetReached() and self.target_index == 2:
-            print("[" + str(self.time) + "] Waypoint 2 reached!")
+            self.log("Waypoint 2 reached!")
             self.target_index += 1 # go for next
-            self.changeTarget(self.target_index)
         elif self.targetReached() and self.target_index == 3:
-            print("[" + str(self.time) + "] Waypoint 3 reached!")
+            self.log("Waypoint 3 reached!")
             self.target_index += 1
-            self.changeTarget(self.target_index)
+        self.changeTarget(self.target_index)
     
     def targetReached(self):
         self.lat_error = math.fabs(self.curr_lat) - math.fabs(self.goal_lat)
@@ -69,20 +65,20 @@ class Robot():
         # if we're too far up or down
         if self.curr_lat > 35.2063480829:
             self.atBoundaryLat = "top"
-            print("[" + str(self.time) + "] At boundary top!")
+            self.log("At boundary top!")
         elif self.curr_lat < 35.20541594:
             self.atBoundaryLat = "bottom"
-            print("[" + str(self.time) + "] At boundary bottom!")
+            self.log("At boundary bottom!")
         else:
             self.atBoundaryLat = "none"
         
         # if we're too far right or left
         if self.curr_lon < -97.4425903447:
             self.atBoundaryLon = "right"
-            print("[" + str(self.time) + "] At boundary right!")
+            self.log("At boundary right!")
         elif self.curr_lon > -97.4420318775:
             self.atBoundaryLon = "left"
-            print("[" + str(self.time) + "] At boundary left!")
+            self.log("At boundary left!")
         else:
             self.atBoundaryLon = "none"
 
@@ -122,7 +118,7 @@ class Robot():
     # final function call for speed
     def getDesiredSpeed(self):
         if (self.getDist() * self.speedP) < self.min_speed:
-            print("[" + str(self.time) + "] ROBOT GO WHIR")
+            self.log("min speed returned")
             return self.min_speed
         elif (self.getDist() * self.speedP) > self.max_speed:
             return self.max_speed # return max speed. doesn't really do anything but it might
@@ -132,15 +128,15 @@ class Robot():
     def getDesiredAngle(self):
         # check boundaries
         if self.atBoundaryLon == "left":
-            return 20
+            return 10
         elif self.atBoundaryLon == "right":
-            return -20
+            return -10
         if self.atBoundaryLat == "top" or self.atBoundaryLat == "bottom":
-            return 20 # works barely
+            return 10 # works barely
         
         val = (self.curr_angle - self.getNeededAngle()) * self.angleP # return the error times gain
         if math.fabs(val) > self.max_angle:
-            print("[" + str(self.time) + "] Too much angle")
+            self.log("max angle returned")
             return math.copysign(self.max_angle, val)
         #elif val < self.min_angle:
         #   print("[" + str(self.time) + "] Not enough angle (but we ain't gonna do anything 'bout it")

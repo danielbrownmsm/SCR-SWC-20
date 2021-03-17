@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>swc_daniel</name>
-  <version>0.0.2</version>
-  <description>TODO</description>
+  <version>0.0.3</version>
+  <description>My submission for the SCR software challenge 2020. It is currently undergoing a rewrite to use more/better sensors and path planning and etc.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <maintainer email="daniel.brown@msmrockets.org">Daniel</maintainer>

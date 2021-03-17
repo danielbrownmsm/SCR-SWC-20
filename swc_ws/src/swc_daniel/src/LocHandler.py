@@ -1,52 +1,47 @@
+import time
+
+class RobotState:
+    def __init__(self, x, y, angle, velocity, angle_velocity):
+        self.x = x
+        self.y = y
+        self.angle = angle
+        self.velocity = velocity
+        self.angle_velocity = angle_velocity
+        self.time = time.time()
+
 
 class LocHandler:
     def __init__(self):
-        self.x = 0
-        self.y = 0
-        self.angle = 0
-
-        self.prev_x = 0
-        self.prev_y = 0
-        self.prev_angle = 0
-
-        self.x_vel = 0
-        self.y_vel = 0
-        self.angle_vel = 0
-
-        self.imu_ran = False
-        self.vel_ran = False
-        self.control_ran = False
-
-        self.last_t = 0
+        #TODO init vars or something
+        pass
     
+    # this data is mostly trash
     def imuCallback(self, data):
-        #data.oreintation # quaternion (x, y, z, w)
-        #data.angular_velocity # vector 3 (x, y, z)
-        #data.linear_velocity # vector 3
-        # there's also a covariance for each one that tells you how much to trust it or something?
-        
-        # delta_x / delta_t = vel
-        
-        t = data.header.stamp.secs + data.header.stamp.nsecs / 1000000000 # nanosecond is one-billionth of a second
-        delta_t = t - self.last_t
-        
-        try:
-            self.x_vel = data.linear_acceleration.x / delta_t
-        except ZeroDivisionError:
-            pass
+        self.i_angle_vel = data.angular_velocity.z
+        self.i_vel = 0 #TODO fix
+        self.i_angle = data.oreintation
 
-        print(self.x_vel)        
-        self.last_t = t
-        
+    # this data is *chef's kiss* perfecto
     def velocityCallback(self, data):
-        #data.data
-        if not self.vel_ran:
-            print(data)
-            self.vel_ran = True
+        # max speed is 8 m/s
+        self.v_vel = data.data
     
+    # this data is ok
     def controlCallback(self, data):
-        #data.speed
-        #data.turn_angle
-        if not self.control_ran:
-            print(data)
-            self.control_ran = True
+        self.c_vel = data.speed
+        self.c_angle = data.turn_angle
+
+    # this data is kinda ok
+    def gpsCallback(self, data):
+        #data.latitude
+        #data.longitude
+        self.g_x = 0
+        self.g_y = 0
+        #TODO haversine formula
+        #TODO convert this to meters or something on a grid and stuff
+
+    def getPos():
+        #TODO do fusion
+        #TODO integrate for pos
+        #TODO filter everything
+        return RobotState(self.x, self.y, self.angle, self.vel, self.angle_vel)
