@@ -1,6 +1,6 @@
 import time
 from Util import getYaw, haversine
-from math import degrees
+from math import degrees, radians, sin, cos
 from swc_msgs.msg import State
 
 class RobotState:
@@ -12,7 +12,6 @@ class RobotState:
         self.angle_velocity = angle_velocity
         self.time = time.time()
 
-
 class LocHandler:
     def __init__(self, startCoords):
         # "official" (or "final" or whatever) vars
@@ -23,6 +22,7 @@ class LocHandler:
         self.prev_x = 0
         self.prev_y = 0
         self.prev_angle = 0
+        self.angle_velocity = 0
 
         self.time = 0
         self.lasttime = 0
@@ -67,20 +67,30 @@ class LocHandler:
         self.g_x, self.g_y = haversine(self.startLat, self.startLon, data.latitude, data.longitude)
         #TODO convert this to meters or something on a grid and stuff
 
-    def getPos(self, event):
+    def getState(self):
         state = State()
         #TODO figure out something to do with event
+        #TODO filter everything
+        
         #TODO do fusion with angle
         self.angle = self.i_angle
-        #TODO integrate for pos
         
-        #TODO filter everything
+        #TODO add in IMU accelerometer data
+        self.velocity = (self.v_vel + self.c_vel) / 2 #TODO change, filter
+
+        #SOH CAH TOA
+        self.x += self.velocity * cos(radians(self.angle))
+        self.y += self.velocity * sin(radians(self.angle))
+
+        #x += delta x / delta time
         
         state.x = self.x
         state.y = self.y #TODO fix
-        state.velocity = self.v_vel #TODO change
+        state.velocity = self.velocity
         
         state.angle = self.angle
         state.angle_velocity = self.angle_velocity
+
+        print(str(self.x) + ", " + str(self.y))
 
         return state

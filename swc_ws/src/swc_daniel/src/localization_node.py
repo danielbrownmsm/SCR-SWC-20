@@ -11,17 +11,12 @@ from std_msgs.msg import Float32
 
 _localization_pub = None
 
-def publish(event):
-    # Publish the message to /sim/control so the simulator receives it
-    if _localization_pub != None:
-        _localization_pub.publish(locHandler.getState())
-
 def main():
     # Initalize our node in ROS
     rospy.init_node("localization_node")
 
     # Create a Publisher that we can use to publish messages to the /daniel/state topic
-    _localization_pub = rospy.Publisher("/daniel/state", State, queue_size=1)
+    _localization_pub = rospy.Publisher("/daniel/state", State, queue_size=3)
 
     # Wait for Waypoints service and then request waypoints
     rospy.wait_for_service("/sim/waypoints")
@@ -38,9 +33,23 @@ def main():
     rospy.Subscriber("/sim/imu", Imu, locHandler.imuCallback)
     rospy.Subscriber("/sim/velocity", Float32, locHandler.velocityCallback)
     rospy.Subscriber("/sim/control", Control, locHandler.controlCallback)
+
+    print("Subscribed!")
+
+    _localization_pub.publish(locHandler.getState())
+    print("published!")
     
     # Let ROS take control of this thread until a ROS wants to kill
     rospy.spin()
+
+def publish(event):
+    # Publish the message to /daniel/state so the simulator receives it
+    global _localization_pub
+    if _localization_pub != None:
+        _localization_pub.publish(locHandler.getState())
+        print("Publishing!")
+    else:
+        print("yeah we can't publish [expletive]")
 
 if __name__ == "__main__":
     try:
