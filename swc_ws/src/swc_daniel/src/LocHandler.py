@@ -45,7 +45,8 @@ class LocHandler:
     def imuCallback(self, data):
         self.i_angle_vel = data.angular_velocity.z
         self.i_vel = 0 #TODO fix
-        self.i_angle = getYaw(data.oreintation)
+        print(data.orientation)
+        #self.i_angle = getYaw(data.oreintation)
 
     # this data is *chef's kiss* perfecto
     def velocityCallback(self, data):

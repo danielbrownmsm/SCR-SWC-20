@@ -1,4 +1,4 @@
-from LocHandler import RobotState
+#from LocHandler import RobotState
 from math import sqrt
 
 #TODO DOCUMENT *EVERYTHING* LIKE *EVERYTHING EVERYTHING*
@@ -32,7 +32,11 @@ class PIDController:
         self.time = 0
         self.lasttime = 0
     
-    def calculate(measurement, setpoint=self.setpoint):
+    def calculate(measurement, setpoint):
+        self.setpoint = setpoint
+        self.calculate(measurement)
+    
+    def calculate(measurement):
         self.error = measurement - setpoint
         self.totalError += self.error
 
@@ -49,11 +53,6 @@ class PIDController:
     
     def setThreshold(self, threshold):
         self.threshold = threshold
-    
-    def setPID(self, P=self.kP, I=self.kI, D=self.kD):
-        self.kP = P
-        self.kI = I
-        self.kD = D
 
 #TODO write Kalman Filter or whatever
 class KalmanFilter:
