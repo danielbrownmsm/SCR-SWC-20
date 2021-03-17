@@ -76,7 +76,7 @@ class LocHandler:
         self.angle = self.i_angle
         
         #TODO add in IMU accelerometer data
-        self.velocity = (self.v_vel + self.c_vel) / 2 #TODO change, filter
+        self.velocity = (self.v_vel + self.c_vel * 3) / 4 #TODO change, filter, weight
 
         #SOH CAH TOA
         self.x += self.velocity * cos(radians(self.angle))

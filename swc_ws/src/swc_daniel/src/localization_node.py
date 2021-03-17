@@ -12,6 +12,9 @@ from std_msgs.msg import Float32
 _localization_pub = None
 
 def main():
+    global _localization_pub
+    global locHandler
+
     # Initalize our node in ROS
     rospy.init_node("localization_node")
 
@@ -36,20 +39,15 @@ def main():
 
     print("Subscribed!")
 
-    _localization_pub.publish(locHandler.getState())
-    print("published!")
-    
     # Let ROS take control of this thread until a ROS wants to kill
     rospy.spin()
 
 def publish(event):
     # Publish the message to /daniel/state so the simulator receives it
-    global _localization_pub
-    if _localization_pub != None:
-        _localization_pub.publish(locHandler.getState())
-        print("Publishing!")
-    else:
-        print("yeah we can't publish [expletive]")
+    global _localization_pub # globals because all funcs and stuff
+    global locHandler
+
+    _localization_pub.publish(locHandler.getState())
 
 if __name__ == "__main__":
     try:
