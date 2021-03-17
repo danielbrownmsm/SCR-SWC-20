@@ -52,6 +52,7 @@ add_message_files(
   FILES
   Control.msg
   Gps.msg
+  State.msg
 )
 
 ## Generate services in the 'srv' folder

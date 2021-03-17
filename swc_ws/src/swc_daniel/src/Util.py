@@ -1,5 +1,6 @@
 #from LocHandler import RobotState
 from math import sqrt
+import tf
 
 #TODO DOCUMENT *EVERYTHING* LIKE *EVERYTHING EVERYTHING*
 
@@ -71,7 +72,7 @@ def dist(x1, y1, x2, y2):
 
 #TODO haversine
 def haversine(lat1, lon1, lat2, lon2):
-    return 0
+    return 0, 0
 
 # Copied directly from whatever worked in Robot.py
 def getYaw(quat):

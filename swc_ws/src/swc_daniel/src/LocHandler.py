@@ -1,5 +1,7 @@
 import time
 from Util import getYaw, haversine
+from math import degrees
+from swc_msgs.msg import State
 
 class RobotState:
     def __init__(self, x, y, angle, velocity, angle_velocity):
@@ -12,7 +14,7 @@ class RobotState:
 
 
 class LocHandler:
-    def __init__(self):
+    def __init__(self, startCoords):
         # "official" (or "final" or whatever) vars
         self.x = 0
         self.y = 0
@@ -36,17 +38,19 @@ class LocHandler:
         # control vars
         self.c_vel = 0
         self.c_angle = 0
+        self.c_angle_change = 0
 
         # GPS vars
         self.g_x = 0
         self.g_y = 0
+        self.startLat = startCoords.latitude
+        self.startLon = startCoords.longitude
     
     # this data is mostly trash
     def imuCallback(self, data):
         self.i_angle_vel = data.angular_velocity.z
         self.i_vel = 0 #TODO fix
-        print(data.orientation)
-        #self.i_angle = getYaw(data.oreintation)
+        self.i_angle = degrees(getYaw(data.orientation))
 
     # this data is *chef's kiss* perfecto
     def velocityCallback(self, data):
@@ -56,15 +60,27 @@ class LocHandler:
     # this data is ok
     def controlCallback(self, data):
         self.c_vel = data.speed
-        self.c_angle = data.turn_angle
+        self.c_angle_change = data.turn_angle
 
     # this data is kinda ok
     def gpsCallback(self, data):
         self.g_x, self.g_y = haversine(self.startLat, self.startLon, data.latitude, data.longitude)
         #TODO convert this to meters or something on a grid and stuff
 
-    def getPos():
-        #TODO do fusion
+    def getPos(self, event):
+        state = State()
+        #TODO figure out something to do with event
+        #TODO do fusion with angle
+        self.angle = self.i_angle
         #TODO integrate for pos
+        
         #TODO filter everything
-        return RobotState(self.x, self.y, self.angle, self.vel, self.angle_vel)
+        
+        state.x = self.x
+        state.y = self.y #TODO fix
+        state.velocity = self.v_vel #TODO change
+        
+        state.angle = self.angle
+        state.angle_velocity = self.angle_velocity
+
+        return state

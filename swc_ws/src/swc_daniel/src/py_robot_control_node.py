@@ -39,17 +39,17 @@ def main():
     print("Waypoints aquired!")
     # minSpeed, maxSpeed, speedP, minAngle, maxAngle, angleP, timerCallback, waypoint_threshol
     robot = r.Robot(waypoints.waypoints, [1,4,175000,0,5,8,0.07,1e-05])
-    locHandler = LocHandler.LocHandler()
+    """locHandler = LocHandler.LocHandler(waypoints.waypoints[0])
 
     # Create a timer that calls timer_callback() with a period of read the thing
-    #rospy.Timer(rospy.Duration(0.1), timer_callback)
+    rospy.Timer(rospy.Duration(0.1), locHandler.getPos)
     #rospy.Timer(rospy.Duration(0.01), timer_callback2)
 
     # get sensor data
-    #rospy.Subscriber("/sim/gps", Gps, robot.updateCoords)
+    rospy.Subscriber("/sim/gps", Gps, locHandler.gpsCallback)
     rospy.Subscriber("/sim/imu", Imu, locHandler.imuCallback)
     rospy.Subscriber("/sim/velocity", Float32, locHandler.velocityCallback)
-    rospy.Subscriber("/sim/control", Control, locHandler.controlCallback)
+    rospy.Subscriber("/sim/control", Control, locHandler.controlCallback)"""
     
     # Let ROS take control of this thread until a ROS wants to kill
     rospy.spin()

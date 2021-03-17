@@ -4,4 +4,5 @@
 
     <!-- Robot control node (Python2) -->
     <node pkg="swc_daniel" type="py_robot_control_node.py" name="py_robot_control_node" output="screen" required="true" />
+    <node pkg="swc_daniel" type="localization_node.py" name="localization_node" output="screen" required="true" />
 </launch>
