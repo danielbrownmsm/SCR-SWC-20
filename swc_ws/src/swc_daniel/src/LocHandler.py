@@ -77,6 +77,7 @@ class LocHandler:
         
         #TODO add in IMU accelerometer data
         self.velocity = (self.v_vel + self.c_vel * 3) / 4 #TODO change, filter, weight
+        #TODO velocity is broken b/c collisions so ??? add in bumper?
 
         #SOH CAH TOA
         self.x += self.velocity * cos(radians(self.angle))
@@ -91,6 +92,7 @@ class LocHandler:
         state.angle = self.angle
         state.angle_velocity = self.angle_velocity
 
-        print(str(self.x) + ", " + str(self.y))
+        # print position (drifts like ~5 meters with no noise on after driving wack across the whole field)
+        #print(str(self.x) + ", " + str(self.y))
 
         return state
