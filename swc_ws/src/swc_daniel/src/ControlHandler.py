@@ -11,15 +11,15 @@ class ControlHandler:
     def bumperCallback(self, data):
         self.isBumping = data.data
     
-    def pathCallback(self, data)
-        pass
+    def pathCallback(self, data):
+        self.msg.speed = data.speed
+        self.msg.turn_angle = data.turn_angle
     
     def visionCallback(self, data):
+        # handle vision corrections
         pass
     
     def getMessage(self):
-
-
         if self.isBumping: # If we're touching something
             self.msg.speed = -8 # HARD REVERSE!
             self.msg.turn_angle = 0

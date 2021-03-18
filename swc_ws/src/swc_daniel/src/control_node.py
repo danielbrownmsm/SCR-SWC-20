@@ -23,8 +23,8 @@ def main():
     rospy.Timer(rospy.Duration(0.1), publish)
     
     # get sensor data
-    rospy.Subscriber("/daniel/state", State, controlHandler.stateCallback)
-    rospy.Subscriber("/daiel/control", Control, controlHandler.controlCallback)
+    #rospy.Subscriber("/daniel/state", State, controlHandler.stateCallback)
+    rospy.Subscriber("/daiel/path", Control, controlHandler.pathCallback)
     
 
     print("Subscribed!")
@@ -37,7 +37,7 @@ def publish(event):
     global _control_pub # globals because all funcs and stuff
     global controlHandler
 
-    _control_pub.publish(controlHandler.getFinalMessage())
+    _control_pub.publish(controlHandler.getMessage())
 
 if __name__ == "__main__":
     try:
