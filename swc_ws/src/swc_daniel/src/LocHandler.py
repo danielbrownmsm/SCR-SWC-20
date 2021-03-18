@@ -31,6 +31,11 @@ class LocHandler:
         self.i_angle = 0
         self.i_angle_vel = 0
         self.i_angle = 0
+        self.i_vel = 0
+
+        self.i_time = 0
+        self.i_last_time = 0
+        self.i_first_run = True
 
         # velocity vars
         self.v_vel = 0
@@ -49,8 +54,18 @@ class LocHandler:
     # this data is mostly trash
     def imuCallback(self, data):
         self.i_angle_vel = data.angular_velocity.z
-        self.i_vel = 0 #TODO fix
         self.i_angle = degrees(getYaw(data.orientation))
+
+        """if not self.i_first_run:
+            self.i_time = data.header.stamp.secs# + data.header.stamp.nsecs
+            delta_time = self.i_time - self.i_last_time
+            self.i_last_time = self.i_time
+        
+            self.i_vel += data.linear_acceleration.x * delta_time
+        else: # wait a run so we can get a time in there so something or IDK honestly at this point my brain is melting and <random nonsense />
+            self.i_time = data.header.stamp.secs# * 1000000 + data.header.stamp.nsecs
+            self.i_last_time = self.i_time
+            self.i_first_run = False"""
 
     # this data is *chef's kiss* perfecto
     def velocityCallback(self, data):
@@ -75,13 +90,17 @@ class LocHandler:
         #TODO do fusion with angle
         self.angle = self.i_angle
         
-        #TODO add in IMU accelerometer data
-        self.velocity = (self.v_vel + self.c_vel * 3 + self.i_vel) / 5 #TODO change, filter, weight
+        self.velocity = self.v_vel #TODO change, filter, weight
+        
         #TODO velocity is broken b/c collisions so ??? add in bumper?
+        #self.velocity = self.i_vel
+        #TODO IMU velocity is crap plz fix
+
+        print(self.velocity)
 
         #SOH CAH TOA
-        self.x += self.velocity * cos(radians(self.angle))
-        self.y += self.velocity * sin(radians(self.angle))
+        self.x += self.velocity * cos(radians(self.angle)) # wait what don't I need to divide by time or something WHAT?
+        self.y += self.velocity * sin(radians(self.angle)) # according to Justin's code I need to multiply? I mean it works pretty well as-is
 
         #TODO weight and make it where GPS doesn't just overwhelm well no because that's good and when would we be stopped anyways
         self.x = (self.x + self.g_x) / 2
@@ -98,6 +117,5 @@ class LocHandler:
 
         # print position (drifts like ~5 meters with no noise on after driving wack across the whole field)
         #print(str(self.x) + ", " + str(self.y))
-        print(str(self.x) + ", " + str(self.y))
-
+        
         return state
