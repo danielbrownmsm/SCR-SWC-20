@@ -4,21 +4,20 @@ class PathHandler:
     def __init__(self, points):
         self.points = points
         self.path = self.getPath()
-        self.ppc = PurePursuit(self.path)
+        self.ppc = PurePursuit(self.path, 10) #TODO tune lookahead distance
+        self.angle_pid = PIDController(0.5, 0.001, 0.000001) #TODO tune
+        self.angle_pid.setSetpoint()
         self.vel_pid = PIDController(3, 0.01, 0.0001) #TODO tune
         self.vel_pid.setSetpoint(0) # we want to reduce distance to 0
 
-        # state vars
-        self.x = 0
-        self.y = 0
-        self.velocity = 0
-        self.angle = 0
-        self.angle_vel = 0
+        # state var
+        self.state = None
     
     def getPath(self):
-        #TODO make this run a pathfinding algo to determine which bonus waypoints to go for b/c if they are too far
+        #TOD0 make this run a pathfinding algo to determine which bonus waypoints to go for b/c if they are too far
         # then they're not worth going for but honestly I don't think we'll run into that problem
-        # then do a PPC fill points or something?
+        #UPDATE: yeah we're not going to do this. It's not worth it, just hit up all the points
+        #TODO do some conversion from lat/lon to y/x
         return self.points
     
     def recalculatePath(self):
@@ -29,26 +28,24 @@ class PathHandler:
         #TODO make this better or something and actually do something etc
         self.obstacles = data.obstacles
         for obstacle in self.obstacles:
-            if obstacle in self.path
+            if obstacle in self.path: # this is the main problem
                 recalculatePath()
 
     def stateCallback(self, data):
-        self.x = data.x
-        self.y = data.y
-        self.velocity = data.velocity
-
-        self.angle = data.angle
-        self.angle_velocity = data.angle_velocity
+        self.state = data
 
     def getTargetHeading(self):
-        return self.ppc.getNextHeading(self.x, self.y, self.angle)
+        self.angle_pid.setSetpoint(self.ppc.getNextHeading(self.state)) # let PPC figure out heading
+        return self.angle_pid.calculate(self.state.angle) # then we will PID to that
     
     def getTargetVelocity(self):
-        return self.vel_pid.calculate(dist(self.x, self.y, self.goalPoint.x, self.goalPoint.y))
+        return self.vel_pid.calculate(dist(self.state.x, self.state.y, self.goalPoint.x, self.goalPoint.y)) # for velocity slow down when approach
     
     def getMessage(self):
+        # THIS SHOULD NOT BE USED FOR CONTROL
+        # that should be handled by the ControlHandler. However, the CH needs to get data from somewhere, so here we are
         message = Control()
-        message.speed = 0  # even though max speed is 8 there is random noise so we should go with something above it so we always go as fast as possible
-        message.turn_angle = 0
+        message.speed = getTargetVelocity()
+        message.turn_angle = getTargetHeading()
         
         return message

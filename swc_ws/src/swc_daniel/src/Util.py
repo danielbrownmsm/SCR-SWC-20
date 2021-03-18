@@ -2,20 +2,36 @@
 from math import sqrt
 import tf
 
-#TODO DOCUMENT *EVERYTHING* LIKE *EVERYTHING EVERYTHING*
 
 class PurePursuit:
-    def __init__(self, points):
+    def __init__(self, points, lookahead_distance):
         self.points = points
+        self.lookahead_distance = lookahead_distance
         self.fillPoints()
     
     def fillPoints(self):
-        #TODO fill points
-        pass
+        finalPoints = []
+        for point in self.points:
+            finalPoints.append(point)
+            #TODO make this actually fill points so we get smooth curves. Or not. Only if it gets us higher score
+        self.points = finalPoints
 
     def getNextHeading(self, curr_state):
-        #TODO get next heading
-        pass
+        lastPoint = self.points[-1] # did I ever mention how much I love Python and negative indexing?
+
+        # for every point in the list (requires list of points to be sorted in order of when you want to hit them)
+        for index, point in enumerate(self.points):
+            if dist(curr_state.x, curr_state.y, point[0], point[1]) > self.lookahead_distance: # if we've gone to far
+                targetPoint = self.points[index - 1] # then we want the point just before this
+
+                # angle between current and goal (probably/hopefully/blame Justin Z)
+                return atan((point[0] - curr_state.x) / (point[1] - curr_state.y))
+
+            elif dist(curr_state.x, curr_state.y, lastPoint[0], lastPoint[1]) < self.lookahead_distance: # if we're pretty much at the end
+                return atan((lastPoint[0] - curr_state.x) / (lastPoint[1] - curr_state.y)) # same thing but with the last point
+        # if we somehow got here,
+        print("What the heck are you doing here?")
+        return curr_state.angle
 
 class PIDController:
     def __init__(self, kP, kI=0, kD=0, threshold=0):
