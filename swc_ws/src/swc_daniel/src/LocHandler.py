@@ -96,7 +96,7 @@ class LocHandler:
         #self.velocity = self.i_vel
         #TODO IMU velocity is crap plz fix
 
-        print(self.velocity)
+        #print(self.velocity)
 
         #SOH CAH TOA
         self.x += self.velocity * cos(radians(self.angle)) # wait what don't I need to divide by time or something WHAT?

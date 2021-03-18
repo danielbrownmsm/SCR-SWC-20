@@ -37,7 +37,7 @@ def main():
     rospy.Subscriber("/sim/velocity", Float32, locHandler.velocityCallback)
     rospy.Subscriber("/sim/control", Control, locHandler.controlCallback)
 
-    print("Subscribed!")
+    print("Localization node setup complete")
 
     # Let ROS take control of this thread until a ROS wants to kill
     rospy.spin()

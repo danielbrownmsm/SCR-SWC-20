@@ -17,8 +17,13 @@ class PathHandler:
         #TOD0 make this run a pathfinding algo to determine which bonus waypoints to go for b/c if they are too far
         # then they're not worth going for but honestly I don't think we'll run into that problem
         #UPDATE: yeah we're not going to do this. It's not worth it, just hit up all the points
-        #TODO do some conversion from lat/lon to y/x
-        return self.points
+        tempList = []
+
+        for point in self.points:
+            y, x = latLonToXY(point.latitude, point.longitude)
+            tempList.append((x, y)) # tuple
+        
+        return tempList
     
     def recalculatePath(self):
         #TODO for when obstacles are in path or something
