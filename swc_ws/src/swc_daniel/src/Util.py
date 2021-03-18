@@ -70,9 +70,24 @@ class KalmanFilter:
 def dist(x1, y1, x2, y2):
     return sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
-#TODO haversine
-def haversine(lat1, lon1, lat2, lon2):
-    return 0, 0
+"""
+un-optimized version
+def xyToLatLon(x, y):
+    lat0Pos = 35.205853
+    lon0Pos = -97.442325
+
+    latitude = (y + noise) / 110944.33 + lat0Pos
+    longitude = (x + noise) / 91058.93 + lon0Pos
+    return latitude, longitude"""
+
+# this is copied from the sim code
+def xyToLatLon(x, y):
+    return (y / 110944.33 + 35.205853, x / 91058.93 + -97.442325)
+
+# this is just the inverse of the above
+def latLonToXY(lat, lon):
+    return ((lat - 35.205853) * 110944.33, (lon - -97.442325) * 91058.93)
+
 
 # Copied directly from whatever worked in Robot.py
 def getYaw(quat):

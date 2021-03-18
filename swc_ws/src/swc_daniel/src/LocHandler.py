@@ -1,5 +1,5 @@
 import time
-from Util import getYaw, haversine
+from Util import getYaw, latLonToXY
 from math import degrees, radians, sin, cos
 from swc_msgs.msg import State
 
@@ -64,8 +64,8 @@ class LocHandler:
 
     # this data is kinda ok
     def gpsCallback(self, data):
-        self.g_x, self.g_y = haversine(self.startLat, self.startLon, data.latitude, data.longitude)
-        #TODO convert this to meters or something on a grid and stuff
+        self.g_x, self.g_y = latLonToXY(data.latitude, data.longitude)
+        self.g_x += 37 # robot starts at (-37, 0) b/c I guess (0, 0) is in far left corner
 
     def getState(self):
         state = State()
@@ -76,17 +76,21 @@ class LocHandler:
         self.angle = self.i_angle
         
         #TODO add in IMU accelerometer data
-        self.velocity = (self.v_vel + self.c_vel * 3) / 4 #TODO change, filter, weight
+        self.velocity = (self.v_vel + self.c_vel * 3 + self.i_vel) / 5 #TODO change, filter, weight
         #TODO velocity is broken b/c collisions so ??? add in bumper?
 
         #SOH CAH TOA
         self.x += self.velocity * cos(radians(self.angle))
         self.y += self.velocity * sin(radians(self.angle))
 
+        #TODO weight and make it where GPS doesn't just overwhelm well no because that's good and when would we be stopped anyways
+        self.x = (self.x + self.g_x) / 2
+        self.y = (self.y + self.g_y) / 2
+
         #x += delta x / delta time
         
         state.x = self.x
-        state.y = self.y #TODO fix
+        state.y = self.y
         state.velocity = self.velocity
         
         state.angle = self.angle
@@ -94,5 +98,6 @@ class LocHandler:
 
         # print position (drifts like ~5 meters with no noise on after driving wack across the whole field)
         #print(str(self.x) + ", " + str(self.y))
+        print(str(self.x) + ", " + str(self.y))
 
         return state
