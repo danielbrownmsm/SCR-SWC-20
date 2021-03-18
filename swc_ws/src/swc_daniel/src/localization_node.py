@@ -19,7 +19,7 @@ def main():
     rospy.init_node("localization_node")
 
     # Create a Publisher that we can use to publish messages to the /daniel/state topic
-    _localization_pub = rospy.Publisher("/daniel/state", State, queue_size=3)
+    _localization_pub = rospy.Publisher("/daniel/state", State, queue_size=1)
 
     # Wait for Waypoints service and then request waypoints
     rospy.wait_for_service("/sim/waypoints")
