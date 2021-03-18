@@ -21,7 +21,7 @@ def main():
     rospy.wait_for_service("/sim/waypoints")
     waypoints = rospy.ServiceProxy("/sim/waypoints", Waypoints)()
 
-    pathHandler = PathHandler.PathHandler(waypoints)
+    pathHandler = PathHandler.PathHandler(waypoints.waypoints)
 
     # Create a timer that calls timer_callback() with a period of 0.1
     rospy.Timer(rospy.Duration(0.1), publish)

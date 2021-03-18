@@ -1,11 +1,12 @@
 #from LocHandler import RobotState
-from math import sqrt
-import tf
+from math import sqrt, atan, degrees
+import tf, time
 
 
 class PurePursuit:
     def __init__(self, points, lookahead_distance):
         self.points = points
+        self.goalPoint = [0, 0]
         self.lookahead_distance = lookahead_distance
         self.fillPoints()
     
@@ -15,6 +16,7 @@ class PurePursuit:
             finalPoints.append(point)
             #TODO make this actually fill points so we get smooth curves. Or not. Only if it gets us higher score
         self.points = finalPoints
+        print("Points filled!")
 
     def getNextHeading(self, curr_state):
         lastPoint = self.points[-1] # did I ever mention how much I love Python and negative indexing?
@@ -23,15 +25,20 @@ class PurePursuit:
         for index, point in enumerate(self.points):
             if dist(curr_state.x, curr_state.y, point[0], point[1]) > self.lookahead_distance: # if we've gone to far
                 targetPoint = self.points[index - 1] # then we want the point just before this
+                self.goalPoint = targetPoint
 
                 # angle between current and goal (probably/hopefully/blame Justin Z)
-                return atan((point[0] - curr_state.x) / (point[1] - curr_state.y))
+                return degrees(atan((targetPoint[0] - curr_state.x) / (targetPoint[1] - curr_state.y)))
 
             elif dist(curr_state.x, curr_state.y, lastPoint[0], lastPoint[1]) < self.lookahead_distance: # if we're pretty much at the end
-                return atan((lastPoint[0] - curr_state.x) / (lastPoint[1] - curr_state.y)) # same thing but with the last point
+                self.goalPoint = lastPoint
+                return degrees(atan((lastPoint[0] - curr_state.x) / (lastPoint[1] - curr_state.y))) # same thing but with the last point
         # if we somehow got here,
         print("What the heck are you doing here?")
         return curr_state.angle
+    
+    def getGoalPoint(self):
+        return self.goalPoint
 
 class PIDController:
     def __init__(self, kP, kI=0, kD=0, threshold=0):
@@ -49,20 +56,20 @@ class PIDController:
         self.time = 0
         self.lasttime = 0
     
-    def calculate(measurement, setpoint):
+    def calculateSetpoint(self, measurement, setpoint):
         self.setpoint = setpoint
         self.calculate(measurement)
     
-    def calculate(measurement):
-        self.error = measurement - setpoint
+    def calculate(self, measurement):
+        self.error = measurement - self.setpoint
         self.totalError += self.error
 
         output = self.error * self.kP + self.totalError * self.kI + (self.error - self.lastError) / (time.time() - self.lasttime) * self.kD
-        self.lastError = error
+        self.lastError = self.error
         self.lastTime = time.time()
         return output
 
-    def setSetpoint(self):
+    def setSetpoint(self, setpoint):
         self.setpoint = setpoint
     
     def atSetpoint(self):

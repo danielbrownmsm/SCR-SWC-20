@@ -50,6 +50,8 @@ class LocHandler:
         self.g_y = 0
         self.startLat = startCoords.latitude
         self.startLon = startCoords.longitude
+
+        print("Localization handler initialized!")
     
     # this data is mostly trash
     def imuCallback(self, data):
@@ -79,8 +81,8 @@ class LocHandler:
 
     # this data is kinda ok
     def gpsCallback(self, data):
-        self.g_x, self.g_y = latLonToXY(data.latitude, data.longitude)
-        self.g_x += 37 # robot starts at (-37, 0) b/c I guess (0, 0) is in far left corner
+        self.g_y, self.g_x = latLonToXY(data.latitude, data.longitude)
+        self.g_y += 37 # robot starts at (-37, 0) b/c I guess (0, 0) is in far left corner
 
     def getState(self):
         state = State()
@@ -116,6 +118,6 @@ class LocHandler:
         state.angle_velocity = self.angle_velocity
 
         # print position (drifts like ~5 meters with no noise on after driving wack across the whole field)
-        #print(str(self.x) + ", " + str(self.y))
+        print(str(self.x) + ", " + str(self.y))
         
         return state

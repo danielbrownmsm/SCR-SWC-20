@@ -9,6 +9,8 @@ class ObstacleHandler:
         
         self.x = 0
         self.y = 0
+
+        print("Obstacle handler initialized!")
     
     def laserCallback(self, data):
         self.laserData = data.ranges
