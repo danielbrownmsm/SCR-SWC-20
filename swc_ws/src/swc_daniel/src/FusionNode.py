@@ -88,31 +88,6 @@ class GpsState:
     def solveAngleAccel(self):
         pass
 
-# for the gps you do
-#delta_time = time - last_time
-# then
-#x, y = latLonToXY(gps.lat, gps.lon)
-# then
-#velocity = dist(x, y, last_x, last_y) / delta_time
-# then
-#acceleration = (velocity - last_velocity) / delta_time
-# then TOA
-#angle = atan((y - last_y) / (x - last_x))
-# then
-#angle_velocity = (angle - last_angle) / delta_time
-# then
-#angle_acceleration = (angle_velocity - last_angle_velocity) / delta_time
-# then
-#last_x = x
-#last_y = y
-#last_velocity = velocity
-#last_acceleration = acceleration
-# then
-#last_angle = angle
-#last_angle_velocity = last_angle
-#last_angle_acceleration = angle_acceleration
-# then
-#last_time = time
 
 # for the imu you do
 #delta_time = time - last_time
@@ -166,10 +141,28 @@ class GpsState:
 # angle stdv = 0.4
 # power stdv = 0.1
 
+# LIDAR and camera don't have noise (I know camera doesn't, pretty sure LIDAR doesn't)
+
 # while !started:
 #   disregard sensor data (we know we're not moving, we know where we start)
 
 class GpsState:
+    #delta_time = time - last_time
+    #x, y = latLonToXY(gps.lat, gps.lon)
+    #velocity = dist(x, y, last_x, last_y) / delta_time
+    #acceleration = (velocity - last_velocity) / delta_time
+    #angle = atan((y - last_y) / (x - last_x))
+    #angle_velocity = (angle - last_angle) / delta_time
+    #angle_acceleration = (angle_velocity - last_angle_velocity) / delta_time
+    #last_x = x
+    #last_y = y
+    #last_velocity = velocity
+    #last_acceleration = acceleration
+    #last_angle = angle
+    #last_angle_velocity = last_angle
+    #last_angle_acceleration = angle_acceleration
+    #last_time = time
+
     def __init__(self):
         self.x = 0
         self.y = 0
@@ -181,18 +174,29 @@ class GpsState:
         self.angle_accel = 0
 
         self.time = 0
-        self.prev_time = 0
-
+        self.hasRun = False
         self.prev_state = None
     
     def update(self, data):
-        #TODO
-        pass
+        if self.hasRun: # if we've already had a state to compare to
+            self.time = time.time()
+            delta_time = self.time - self.prev_state.time
+
+            self.x, self.y = latLonToXY(data.latitude, data.longitude)
+            self.velocity = dist(self.x, self.y, self.prev_state.x, self.prev_state.y) / delta_time
+            self.acceleration = (self.velocity - self.prev_state.velocity) / delta_time
+            
+            self.angle = atan((self.y - self.prev_state.y) / (self.x - self.prev_state.x))
+            self.angle_velocity = (self.angle - self.prev_state.angle) / delta_time
+            self.angle_acceleration = (self.angle_velocity - self.prev_state.angle_velocity) / delta_time
     
-    def solve(self):
-        #TODO
-        pass
-    
+            self.prev_state = State(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
+        else: # otherwise, make a state assuming we haven't moved and at our current position but wait
+            # we know where we start it's the first waypoint also (-37, 0) so what do we do?
+            self.x, self.y = latLonToXY(data.latitude, data.longitude)
+            self.prev_state = State(self.x, self.y, 0, 0, 0, 0, 0, time.time(), 0, DEFAULT_TRUST)
+            self.hasRun = True
+        
 
 class LocHandler:
     def __init__(self):
