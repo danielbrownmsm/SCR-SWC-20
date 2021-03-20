@@ -114,6 +114,85 @@ class GpsState:
 # then
 #last_time = time
 
+# for the imu you do
+#delta_time = time - last_time
+# then
+#velocity += acceleration * delta_time
+# then
+#x, y = <trig stuff>
+# then
+#angle_velocity += angular_acceleration * delta_time
+# then
+#angle = orientation.yaw || angle += angle_velocity * delta_time
+# then
+#last_x = x
+#last_y = y
+#last_velocity = velocity
+#last_acceleration = acceleration
+# then
+#last_angle = angle
+#last_angle_velocity = last_angle
+#last_angle_acceleration = angle_acceleration
+# then
+#last_time = time
+
+# for velocity you do
+#x = <trig>
+#y = <trig>
+#acceleration = (velocity - last_velocity) / delta_time
+#angle = <outside source>
+#and: None for angle and everything else related to angle 
+# for LIDAR you do
+# for camera you do really complicated things that I don't feel like doing right now
+
+# first-order/top-level/whatever data:
+# x, y <- GPS
+# velocity <- velocity, control
+# acceleration <- IMU
+# angle <- control, IMU
+# angle_vel <- IMU
+# angle_accel <- IMU
+
+# pretty sure sensor data becomes noisier the faster you go
+# latitude stdv = 1.843
+# longitude stdv = 2.138
+
+# accel stdv = 0.15
+# orientation stdv = 0.017
+# angle vel stdv = 0.017
+
+# vel stdv = 0.1
+
+# angle stdv = 0.4
+# power stdv = 0.1
+
+# while !started:
+#   disregard sensor data (we know we're not moving, we know where we start)
+
+class GpsState:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        self.velocity = 0
+        self.accel = 0
+
+        self.angle = 0
+        self.angle_velocity = 0
+        self.angle_accel = 0
+
+        self.time = 0
+        self.prev_time = 0
+
+        self.prev_state = None
+    
+    def update(self, data):
+        #TODO
+        pass
+    
+    def solve(self):
+        #TODO
+        pass
+    
 
 class LocHandler:
     def __init__(self):
