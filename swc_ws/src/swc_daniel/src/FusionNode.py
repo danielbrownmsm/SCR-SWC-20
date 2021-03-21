@@ -96,8 +96,8 @@ class VelocityHandler:
         
             self.velocity = data.data # who wants proper terminology anyways?
             self.acceleration = (self.velocity - self.prev_state.velocity) / delta_time
-            self.x = self.prev_state.x + (self.velocity) * delta_time #TODO do trig here to get sep x/y components
-            self.y = self.prev_state.y + (self.velocity) * delta_time
+            self.x = self.prev_state.x + self.velocity * cos(self.angle) * delta_time # trig done
+            self.y = self.prev_state.y + self.velocity * sin(self.angle) * delta_time
             
             self.prev_state = State(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
         else:
@@ -135,8 +135,8 @@ class ControlHandler:
 
             self.velocity = data.speed # who wants proper terminology anyways?
             self.acceleration = (self.velocity - self.prev_state.velocity) / delta_time
-            self.x = self.prev_state.x + (self.velocity) * delta_time #TODO do trig here to get sep x/y components
-            self.y = self.prev_state.y + (self.velocity) * delta_time
+            self.x = self.prev_state.x + self.velocity * cos(self.angle) * delta_time # trig done
+            self.y = self.prev_state.y + self.velocity * sin(self.angle) * delta_time
             
             self.prev_state = State(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
         else:
@@ -194,9 +194,16 @@ class ImuHandler:
 
             self.acceleration = data.linear_acceleration.x # probably x, right?
             self.velocity = self.prev_state.velocity + self.acceleration * delta_time # yeah that's right
-            self.x = self.prev_state.x + (self.velocity) * delta_time #TODO do trig here to get sep x/y components
-            self.y = self.prev_state.y + (self.velocity) * delta_time
-            
+            self.x = self.prev_state.x + self.velocity * cos(self.angle) * delta_time # trig done
+            self.y = self.prev_state.y + self.velocity * sin(self.angle) * delta_time
+
+            # SOH CAH TOA
+            # 0, 0 -> 0, 100 is forwards
+            # +angle is right, -angle is left
+            # x is adj, y is opp
+            # cos(self.angle) = x / hyp -> cos(angle) * hyp = x
+            # sin(self.angle) = y / hyp
+
             self.prev_state = State(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
         else:
             # wait if we know this is the first then wouldn't the start be (-37, 0) or whatever?
@@ -210,8 +217,8 @@ class GpsHandler:
     #velocity = dist(x, y, last_x, last_y) / delta_time
     #acceleration = (velocity - last_velocity) / delta_time
     #angle = atan((y - last_y) / (x - last_x))
-    #angle_velocity = (angle - last_angle) / delta_time
-    #angle_acceleration = (angle_velocity - last_angle_velocity) / delta_time
+    #angle_velocity = (self.angle - last_angle) / delta_time
+    #angle_acceleration = (self.angle_velocity - last_angle_velocity) / delta_time
     #last_x = x
     #last_y = y
     #last_velocity = velocity
