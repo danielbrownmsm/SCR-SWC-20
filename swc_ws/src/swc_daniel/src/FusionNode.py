@@ -262,35 +262,42 @@ class GpsHandler:
             self.prev_state = State(x=-37, y=0, time=time.time())
             self.hasRun = True
         
+class FusedState:
+    def __init__(self):
+        #TODO copypasta
+    
+    def update(self, gps, imu, velocity, control, laser, vision):
+        self.x = (gps.x + imu.x + velocity.x + control.x + laser.x + vision.x) / 6
+        #TODO fix because this is cornelius agrippa
 
 class LocHandler:
     def __init__(self):
-        self.imu_state = State()
-        self.gps_state = State()
-        self.vel_state = State()
-        self.ctrl_state = State()
-        self.lidar_state = State()
-        self.vision_state = State()
+        self.imu_state = ImuState()
+        self.gps_state = GpsState()
+        self.vel_state = VelocityState()
+        self.ctrl_state = ControlState()
+        self.lidar_state = LaserState()
+        self.vision_state = VisionState()
     
-        self.fused_state = State()
+        self.fused_state = FusedState()
 
     def gpsCallback(self, data):
-        pass
+        self.gps_state.update(data)
     
     def imuCallback(self, data):
-        pass
+        self.imu_state.update(data)
 
     def controlCallback(self, data):
-        pass
+        self.ctrl_state.update(data)
 
     def velocityCallback(self, data):
-        pass
+        self.vel_state.update(data)
 
     def lidarCallback(self, data):
-        pass
+        self.lidar_state.update(data)
 
     def visionCallback(self, data):
-        pass
+        self.vision_state.update(data)
     
     def getState(self, data):
         return -1
