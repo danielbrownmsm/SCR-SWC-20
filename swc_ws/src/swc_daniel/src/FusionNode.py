@@ -50,7 +50,7 @@ class State:
 # angle_accel <- IMU
 
 # pretty sure sensor data becomes noisier the faster you go
-# latitude stdv = 1.843
+# latitude stdv = 1.843 <- meters varies, not gps lat/lon
 # longitude stdv = 2.138
 # accel stdv = 0.15
 # orientation stdv = 0.017
@@ -94,16 +94,14 @@ class VelocityHandler:
             #TODO find a way to pass angle data here because without it we're pretty much useless here as velocity and we need to share our velocity and what the heck it's like late right now why are these lines so long?
             self.angle = None
         
-            self.velocity = data.data # who wants proper terminology anyways?
+            self.velocity = data.data
             self.acceleration = (self.velocity - self.prev_state.velocity) / delta_time
             self.x = self.prev_state.x + self.velocity * cos(self.angle) * delta_time # trig done
             self.y = self.prev_state.y + self.velocity * sin(self.angle) * delta_time
             
             self.prev_state = State(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
         else:
-            # wait if we know this is the first then wouldn't the start be (-37, 0) or whatever?
-            self.x, self.y = (0, 0) #TODO fix init-ing states
-            self.prev_state = State(self.x, self.y, 0, 0, 0, 0, 0, time.time(), 0, DEFAULT_TRUST)
+            self.prev_state = State(x=-37, y=0, time=time.time())
             self.hasRun = True
 
 class ControlHandler:
@@ -129,6 +127,7 @@ class ControlHandler:
             
             # angle before position because integrated for position needs the angle for the trig
             #TODO fix because we only actual change our heading if we are going forwards so 20 deg at 1 m/s for X seconds is less than 20 deg at 4 m/s
+            # yeah we need to do some forward kinematics or something
             self.angle = self.prev_state.angle + data.turn_angle
             self.angle_velocity = (self.angle - self.prev_state.angle) / delta_time
             self.angle_acceleration = (self.angle_velocity - self.prev_state.angle_velocity) / delta_time
@@ -140,9 +139,7 @@ class ControlHandler:
             
             self.prev_state = State(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
         else:
-            # wait if we know this is the first then wouldn't the start be (-37, 0) or whatever?
-            self.x, self.y = (0, 0) #TODO fix init-ing states
-            self.prev_state = State(self.x, self.y, 0, 0, 0, 0, 0, time.time(), 0, DEFAULT_TRUST)
+            self.prev_state = State(x=-37, y=0, time=time.time())
             self.hasRun = True
 
 class ImuHandler:
@@ -188,8 +185,15 @@ class ImuHandler:
             delta_time = self.time - self.prev_state.time
             
             # angle before position because integrated for position needs the angle for the trig
-            self.angle = getYaw(data.orientation) #TODO fuse angle with integrated angular velocity and vice versa
-            self.angle_velocity = data.angular_velocity.z
+            poss_angle_o = getYaw(data.orientation)
+            poss_angle_velocity_o = (self.angle - self.prev_state.angle) / delta_time
+
+            poss_angle_velocity_av = data.angular_velocity.z
+            poss_angle_av = self.prev_state.angle + poss_angle_velocity_av * delta_time
+
+            self.angle = (poss_angle_o + poss_angle_av) / 2 # TODO get better fusing
+            self.angle_velocity = (poss_angle_velocity_o + poss_angle_velocity_av) / 2
+            
             self.angle_acceleration = (self.angle_velocity - self.prev_state.angle_velocity) / delta_time
 
             self.acceleration = data.linear_acceleration.x # probably x, right?
@@ -206,11 +210,9 @@ class ImuHandler:
 
             self.prev_state = State(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
         else:
-            # wait if we know this is the first then wouldn't the start be (-37, 0) or whatever?
-            self.x, self.y = (0, 0) #TODO fix init-ing states
-            self.prev_state = State(self.x, self.y, 0, 0, 0, 0, 0, time.time(), 0, DEFAULT_TRUST)
+            self.prev_state = State(x=-37, y=0, time=time.time())
             self.hasRun = True
-
+        
 class GpsHandler:
     #delta_time = time - last_time
     #x, y = latLonToXY(gps.lat, gps.lon)
@@ -256,10 +258,8 @@ class GpsHandler:
             self.angle_acceleration = (self.angle_velocity - self.prev_state.angle_velocity) / delta_time
     
             self.prev_state = State(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
-        else: # otherwise, make a state assuming we haven't moved and at our current position but wait
-            # we know where we start it's the first waypoint also (-37, 0) so what do we do?
-            self.x, self.y = latLonToXY(data.latitude, data.longitude)
-            self.prev_state = State(self.x, self.y, 0, 0, 0, 0, 0, time.time(), 0, DEFAULT_TRUST)
+        else:
+            self.prev_state = State(x=-37, y=0, time=time.time())
             self.hasRun = True
         
 

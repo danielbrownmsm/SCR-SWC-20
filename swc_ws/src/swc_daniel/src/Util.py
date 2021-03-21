@@ -109,7 +109,7 @@ def xyToLatLon(x, y):
 
 # this is just the inverse of the above
 def latLonToXY(lat, lon):
-    return ((lat - 35.205853) * 110944.33, (lon - -97.442325) * 91058.93)
+    return ((lat - 35.205853) * 110944.33, (lon - -97.442325) * 91058.93)[::-1] #TODO fix these, returns in wrong order
 
 
 # Copied directly from whatever worked in Robot.py
