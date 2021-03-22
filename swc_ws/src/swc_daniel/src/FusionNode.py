@@ -38,33 +38,9 @@ class State:
     def update(self):
         pass
 
-# for LIDAR you do stuff
-# for camera you do really complicated things that I don't feel like doing right now
-
-# first-order/top-level/whatever data:
-# x, y <- GPS
-# velocity <- velocity, control
-# acceleration <- IMU
-# angle <- control, IMU
-# angle_vel <- IMU
-# angle_accel <- IMU
-
-# pretty sure sensor data becomes noisier the faster you go
-# latitude stdv = 1.843 <- meters varies, not gps lat/lon
-# longitude stdv = 2.138
-# accel stdv = 0.15
-# orientation stdv = 0.017
-# angle vel stdv = 0.017
-# vel stdv = 0.1
-# angle stdv = 0.4
-# power stdv = 0.1
-# LIDAR and camera don't have noise (I know camera doesn't, pretty sure LIDAR doesn't)
-
-# while !started:
-#   disregard sensor data (we know we're not moving, we know where we start)
-
 # =======================================================================================================================
 # TODO WAIT NO MAKE AN INIT_STATE METHOD OF ALL THE HANDLERS THAT IS CALLED AT THE BEGINNING SO THEY KNOW THEIR POSITIONS (starting waypoints!) AND CAN GET THE PREV_STATE VAR INITED AND STUFF DANIEL YOU'RE A GENIUS (occasionaly)
+# TODO BUG FIXME XXX HACK the current else: State(x=-37) is wrong b/c we should treat it like (0, 0) and so also GPS callback is wrong so need to like +37 or something
 # =======================================================================================================================
 
 class VelocityHandler:
@@ -86,13 +62,14 @@ class VelocityHandler:
         self.hasRun = False
         self.prev_state = None
     
-    def update(self, data):
+    def update(self, data, angle):
         if self.hasRun:
             self.time = time.time()
             delta_time = self.time - self.prev_state.time
             
-            #TODO find a way to pass angle data here because without it we're pretty much useless here as velocity and we need to share our velocity and what the heck it's like late right now why are these lines so long?
-            self.angle = None
+            self.angle = angle
+            self.angle_velocity = (self.angle - self.prev_state.angle) / delta_time
+            self.angle_acceleration = (self.angle_velocity - self.prev_state.angle_velocity) / delta_time
         
             self.velocity = data.data
             self.acceleration = (self.velocity - self.prev_state.velocity) / delta_time
@@ -263,12 +240,56 @@ class GpsHandler:
             self.hasRun = True
         
 class FusedState:
+    # first-order/top-level/whatever data:
+    # x, y <- GPS
+    # velocity <- velocity, control
+    # acceleration <- IMU
+    # angle <- control, IMU
+    # angle_vel <- IMU
+    # angle_accel <- IMU
+
+    # pretty sure sensor data becomes noisier the faster you go
+    # latitude stdv = 1.843 <- meters varies, not gps lat/lon
+    # longitude stdv = 2.138
+    # accel stdv = 0.15
+    # orientation stdv = 0.017
+    # angle vel stdv = 0.017
+    # vel stdv = 0.1
+    # angle stdv = 0.4
+    # power stdv = 0.1
+    # LIDAR and camera don't have noise (I know camera doesn't, pretty sure LIDAR doesn't)
+
     def __init__(self):
-        #TODO copypasta
+        self.x = 0
+        self.y = 0
+        self.velocity = 0
+        self.accel = 0
+
+        self.angle = 0
+        self.angle_velocity = 0
+        self.angle_accel = 0
     
-    def update(self, gps, imu, velocity, control, laser, vision):
-        self.x = (gps.x + imu.x + velocity.x + control.x + laser.x + vision.x) / 6
-        #TODO fix because this is cornelius agrippa
+    #TODO get better fusing algo because this just averages everything
+    def update(self, *args):
+        total = len(args) # however many states you want is what you get
+
+        for state in args:
+            self.x += state.x
+            self.y += state.y
+            self.velocity += state.velocity
+            self.accel += state.accel
+
+            self.angle += state.angle
+            self.angle_velocity += state.angle_velocity
+            self.angle_accel += state.angle_accel
+        self.x /= total
+        self.y /= total
+        self.velocity /= total
+        self.accel /= total
+
+        self.angle /= total
+        self.angle_velocity /= total
+        self.angle_accel /= total
 
 class LocHandler:
     def __init__(self):
@@ -291,7 +312,7 @@ class LocHandler:
         self.ctrl_state.update(data)
 
     def velocityCallback(self, data):
-        self.vel_state.update(data)
+        self.vel_state.update(data, self.imu_state.angle) #TODO do something better than this
 
     def lidarCallback(self, data):
         self.lidar_state.update(data)
@@ -300,4 +321,53 @@ class LocHandler:
         self.vision_state.update(data)
     
     def getState(self, data):
-        return -1
+        #TODO maybe update all the other states to match the fused state? otherwise the numbers may diverge and error becomes exponential instead of linear
+        self.fused_state.update(self.gps_state, self.imu_state, self.vel_state, self.ctrl_state)
+        return self.fused_state #TODO wait this is wrong should return a State message
+
+locHandler = LocHandler()
+
+def main():
+    global locHandler
+    global publisher
+
+    # Initalize our node in ROS
+    rospy.init_node("fusion_node")
+
+    # Create a Publisher that we can use to publish messages to the /daniel/state topic
+    publisher = rospy.Publisher("/daniel/state", State, queue_size=1)
+
+    # Wait for Waypoints service and then request waypoints
+    rospy.wait_for_service("/sim/waypoints")
+    waypoints = rospy.ServiceProxy("/sim/waypoints", Waypoints)()
+    print("Waypoints aquired!")
+
+    
+    # get sensor data
+    rospy.Subscriber("/sim/gps", Gps, locHandler.gpsCallback)
+    rospy.Subscriber("/sim/imu", Imu, locHandler.imuCallback)
+    rospy.Subscriber("/sim/velocity", Float32, locHandler.velocityCallback)
+    rospy.Subscriber("/sim/control", Control, locHandler.controlCallback)
+
+    # Create a timer that calls timer_callback() with a period of 0.1
+    rospy.Timer(rospy.Duration(0.1), publish)
+
+    print("Localization node setup complete")
+
+    # Let ROS take control of this thread until a ROS wants to kill
+    rospy.spin()
+
+def publish(event):
+    # Publish the message to /daniel/state so the simulator receives it
+    global publisher
+    global locHandler
+
+    publisher.publish(locHandler.getState())
+
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except rospy.ROSInterruptException:
+        pass

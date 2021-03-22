@@ -3,7 +3,20 @@ from math import sqrt, atan, degrees
 import tf, time
 
 
+def float_range(start, end, step):
+    """
+    Ooh a docstring yes very programmer much skilled
+    This is basically range() but it works with decimal values, exactly like you'd expect. Python you let me down by not having this
+    """
+    running_total = start
+    while running_total + step < end:
+        yield running_total
+        running_total += step
+    yield running_total # b/c it's added but not yielded because then while exits
+    yield end # final case
+
 class PurePursuit:
+    """A very trashy pure-pursuit controller"""
     def __init__(self, points, lookahead_distance):
         self.points = points
         self.goalPoint = [0, 0]
@@ -12,13 +25,24 @@ class PurePursuit:
     
     def fillPoints(self):
         finalPoints = []
-        for point in self.points:
-            finalPoints.append(point)
-            #TODO make this actually fill points so we get smooth curves. Or not. Only if it gets us higher score
+        
+        for point in self.points: # for each point in our list of goals
+            print("Adding point: " + str(point[0]) + ", " + str(point[1]))
+            finalPoints.append(point) # add the point
+            # atan2 b/c preserving sign or something that we might want idk
+            angle = atan2(y, x) # that's probably right order of params TODO check
+            
+            # for every point in between current and next increasing by someRandomThreshold along the same angle
+            for hyp in float_range(0, dist(point, points[+1]), someRandomThreshold):
+               new_x = cos(angle) * hyp # wait I don't need to recalc the cos() and sin() vals they stay the same
+               new_y = sin(angle) * hyp # but "premature optimization is the root of all evil" - some programmer so I'll just TODO make faster
+               finalPoints.append((new_x, new_y)) # add that point
+        
         self.points = finalPoints
         print("Points filled!")
 
     def getNextHeading(self, curr_state):
+        #TODO rewrite this plz this looks terrible and is most likely wrong
         lastPoint = self.points[-1] # did I ever mention how much I love Python and negative indexing?
 
         # for every point in the list (requires list of points to be sorted in order of when you want to hit them)
@@ -38,20 +62,24 @@ class PurePursuit:
         return curr_state.angle
     
     def getGoalPoint(self):
+        # !todo eliminate the reason for this being here oh wait it's here for distance PID purposes nvm
         return self.goalPoint
 
 class PIDController:
-    def __init__(self, kP, kI=0, kD=0, threshold=0):
+    """A very trashy PID Controller that is basically just WPILib's but python"""
+    def __init__(self, kP, kI=0, kD=0, threshold=0.1, velocity_threshold=0.1):
         self.kP = kP
         self.kI = kI
         self.kD = kD
         
         self.error = 0
         self.lastError = 0
+        self.velocity_error = 0
         self.totalError = 0
 
         self.setpoint = 0
-        self.threshold = 0
+        self.threshold = threshold
+        self.velocity_threshold = velocity_threshold
 
         self.time = 0
         self.lasttime = 0
@@ -62,9 +90,10 @@ class PIDController:
     
     def calculate(self, measurement):
         self.error = measurement - self.setpoint
+        self.velocity_error = (self.error - self.lastError) / (time.time() - self.lasttime) #idk why it's called velocity that's what WPILib says but it makes sense
         self.totalError += self.error
 
-        output = self.error * self.kP + self.totalError * self.kI + (self.error - self.lastError) / (time.time() - self.lasttime) * self.kD
+        output = self.error * self.kP + self.totalError * self.kI + self.velocity_error * self.kD
         self.lastError = self.error
         self.lastTime = time.time()
         return output
@@ -73,21 +102,14 @@ class PIDController:
         self.setpoint = setpoint
     
     def atSetpoint(self):
-        return abs(self.error) < self.threshold
+        return abs(self.error) < self.threshold and abs(self.velocity_error) < self.velocity_threshold
     
     def setThreshold(self, threshold):
         self.threshold = threshold
-
-#TODO write Kalman Filter or whatever
-class KalmanFilter:
-    def __init__(self):
+    
+    def reset():
+        #TODO do we even need this?
         pass
-
-    def update(self, val):
-        pass
-
-    def get(self):
-        return 0
 
 # Good ol' distance formula
 def dist(x1, y1, x2, y2):
@@ -108,7 +130,7 @@ def xyToLatLon(x, y):
     return (y / 110944.33 + 35.205853, x / 91058.93 + -97.442325)
 
 # this is just the inverse of the above
-def latLonToXY(lat, lon):
+def latLonToXY(lat, lon): # TODO XXX BUG FIXME
     return ((lat - 35.205853) * 110944.33, (lon - -97.442325) * 91058.93)[::-1] #TODO fix these, returns in wrong order
 
 
