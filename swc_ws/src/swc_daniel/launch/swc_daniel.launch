@@ -4,7 +4,8 @@
 
     <!-- Robot control nodes (Python2) -->
     <node pkg="swc_daniel" type="control_node.py" name="control_node" output="screen" required="true" />
-    <node pkg="swc_daniel" type="localization_node.py" name="localization_node" output="screen" required="true" />
+    <!-- <node pkg="swc_daniel" type="localization_node.py" name="localization_node" output="screen" required="true" /> -->
+    <node pkg="swc_daniel" type="FusionNode.py" name="fusion_node" output="screen" required="true" />
     <node pkg="swc_daniel" type="obstacle_node.py" name="obstacle_node" output="screen" required="true" />
     <node pkg="swc_daniel" type="path_node.py" name="path_node" output="screen" required="true" />
     <!-- #TODO add other nodes here -->

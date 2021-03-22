@@ -11,11 +11,6 @@
   <license>MIT</license>
   <!-- MIT seems good enough. Who cares anyways. -->
 
-  <!-- Author tags are optional, multiple are allowed, one per tag -->
-  <!-- Authors do not have to be maintainers, but could be -->
-  <!-- Example: -->
-  <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
-
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>swc_msgs</build_depend>
   <build_depend>roscpp</build_depend>

@@ -1,0 +1,27 @@
+can't look through this now but do so TODO as soon as possible
+
+Traceback (most recent call last):
+  File "/mnt/c/Users/Brown_Family01/Documents/Github/SCR-SWC-20/swc_ws/src/swc_daniel/src/path_node.py", line 45, in <module>
+    main()
+  File "/mnt/c/Users/Brown_Family01/Documents/Github/SCR-SWC-20/swc_ws/src/swc_daniel/src/path_node.py", line 24, in main
+    pathHandler = PathHandler.PathHandler(waypoints.waypoints)
+  File "/mnt/c/Users/Brown_Family01/Documents/Github/SCR-SWC-20/swc_ws/src/swc_daniel/src/PathHandler.py", line 8, in __init__
+    self.ppc = PurePursuit(self.path, 10) #TODO tune lookahead distance
+  File "/mnt/c/Users/Brown_Family01/Documents/Github/SCR-SWC-20/swc_ws/src/swc_daniel/src/Util.py", line 24, in __init__
+    self.fillPoints()
+  File "/mnt/c/Users/Brown_Family01/Documents/Github/SCR-SWC-20/swc_ws/src/swc_daniel/src/Util.py", line 33, in fillPoints
+    angle = atan2(y, x) # that's probably right order of params TODO check
+NameError: global name 'y' is not defined
+Exception in thread Thread-7:
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/threading.py", line 801, in __bootstrap_inner
+    self.run()
+  File "/opt/ros/melodic/lib/python2.7/dist-packages/rospy/timer.py", line 234, in run
+    self._callback(TimerEvent(last_expected, last_real, current_expected, current_real, last_duration))
+  File "/mnt/c/Users/Brown_Family01/Documents/Github/SCR-SWC-20/swc_ws/src/swc_daniel/src/FusionNode.py", line 406, in publish
+    publisher.publish(locHandler.getState())
+  File "/mnt/c/Users/Brown_Family01/Documents/Github/SCR-SWC-20/swc_ws/src/swc_daniel/src/FusionNode.py", line 354, in getState
+    self.fused_state.update(self.gps_state, self.imu_state, self.vel_state, self.ctrl_state)
+  File "/mnt/c/Users/Brown_Family01/Documents/Github/SCR-SWC-20/swc_ws/src/swc_daniel/src/FusionNode.py", line 313, in update
+    self.angle_accel += state.angle_accel
+AttributeError: VelocityHandler instance has no attribute 'angle_accel'

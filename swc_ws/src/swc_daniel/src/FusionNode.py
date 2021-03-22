@@ -1,3 +1,17 @@
+#!/usr/bin/env python
+
+import time
+from math import cos, sin, atan2, atan
+
+import rospy
+from std_msgs.msg import Float32
+from sensor_msgs.msg import Imu
+from swc_msgs.msg import State, Gps, Control
+from swc_msgs.srv import Waypoints
+
+from Util import latLonToXY, getYaw, dist
+
+#TODO either use or remove
 DEFAULT_TRUST = {
     "x":1,
     "y":1,
@@ -8,7 +22,7 @@ DEFAULT_TRUST = {
     "angle_accel":1
 }
 
-class State:
+class RobotState:
     def __init__(self, x=0, y=0, velocity=0, accel=0, angle=0, angle_velocity=0, angle_accel=0, time=0, prev_time=0, trust_vals=DEFAULT_TRUST):
         self.x = x
         self.y = y
@@ -76,9 +90,9 @@ class VelocityHandler:
             self.x = self.prev_state.x + self.velocity * cos(self.angle) * delta_time # trig done
             self.y = self.prev_state.y + self.velocity * sin(self.angle) * delta_time
             
-            self.prev_state = State(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
+            self.prev_state = RobotState(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
         else:
-            self.prev_state = State(x=-37, y=0, time=time.time())
+            self.prev_state = RobotState(x=-37, y=0, time=time.time())
             self.hasRun = True
 
 class ControlHandler:
@@ -114,9 +128,9 @@ class ControlHandler:
             self.x = self.prev_state.x + self.velocity * cos(self.angle) * delta_time # trig done
             self.y = self.prev_state.y + self.velocity * sin(self.angle) * delta_time
             
-            self.prev_state = State(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
+            self.prev_state = RobotState(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
         else:
-            self.prev_state = State(x=-37, y=0, time=time.time())
+            self.prev_state = RobotState(x=-37, y=0, time=time.time())
             self.hasRun = True
 
 class ImuHandler:
@@ -185,9 +199,9 @@ class ImuHandler:
             # cos(self.angle) = x / hyp -> cos(angle) * hyp = x
             # sin(self.angle) = y / hyp
 
-            self.prev_state = State(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
+            self.prev_state = RobotState(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
         else:
-            self.prev_state = State(x=-37, y=0, time=time.time())
+            self.prev_state = RobotState(x=-37, y=0, time=time.time())
             self.hasRun = True
         
 class GpsHandler:
@@ -226,17 +240,32 @@ class GpsHandler:
             self.time = time.time()
             delta_time = self.time - self.prev_state.time
 
+            if delta_time <= 0: # this shouldn't happen and will lead to bad
+                # so run, run away Simba, and never
+                return
+
             self.x, self.y = latLonToXY(data.latitude, data.longitude)
             self.velocity = dist(self.x, self.y, self.prev_state.x, self.prev_state.y) / delta_time
             self.acceleration = (self.velocity - self.prev_state.velocity) / delta_time
             
-            self.angle = atan((self.y - self.prev_state.y) / (self.x - self.prev_state.x))
-            self.angle_velocity = (self.angle - self.prev_state.angle) / delta_time
-            self.angle_acceleration = (self.angle_velocity - self.prev_state.angle_velocity) / delta_time
+            try:
+                self.angle = atan((self.y - self.prev_state.y) / (self.x - self.prev_state.x))
+            except ZeroDivisionError:
+                self.angle = 0
+            
+            try:
+                self.angle_velocity = (self.angle - self.prev_state.angle) / delta_time
+            except ZeroDivisionError:
+                self.angle_velocity = 0
+            
+            try:
+                self.angle_acceleration = (self.angle_velocity - self.prev_state.angle_velocity) / delta_time
+            except ZeroDivisionError:
+                self.angle_acceleration = 0
     
-            self.prev_state = State(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
+            self.prev_state = RobotState(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
         else:
-            self.prev_state = State(x=-37, y=0, time=time.time())
+            self.prev_state = RobotState(x=-37, y=0, time=time.time())
             self.hasRun = True
         
 class FusedState:
@@ -293,12 +322,12 @@ class FusedState:
 
 class LocHandler:
     def __init__(self):
-        self.imu_state = ImuState()
-        self.gps_state = GpsState()
-        self.vel_state = VelocityState()
-        self.ctrl_state = ControlState()
-        self.lidar_state = LaserState()
-        self.vision_state = VisionState()
+        self.imu_state = ImuHandler()
+        self.gps_state = GpsHandler()
+        self.vel_state = VelocityHandler()
+        self.ctrl_state = ControlHandler()
+        #self.lidar_state = LaserHandler()
+        #self.vision_state = VisionHandler()
     
         self.fused_state = FusedState()
 
@@ -320,10 +349,22 @@ class LocHandler:
     def visionCallback(self, data):
         self.vision_state.update(data)
     
-    def getState(self, data):
+    def getState(self):
         #TODO maybe update all the other states to match the fused state? otherwise the numbers may diverge and error becomes exponential instead of linear
         self.fused_state.update(self.gps_state, self.imu_state, self.vel_state, self.ctrl_state)
-        return self.fused_state #TODO wait this is wrong should return a State message
+        
+        # create the message
+        state = State()
+        state.x = self.fused_state.x
+        state.y = self.fused_state.y
+        state.velocity = self.fused_state.velocity
+        state.acceleration = self.fused_state.acceleration
+
+        state.angle = self.fused_state.angle
+        state.angle_velocity = self.fused_state.angle_velocity
+        state.angle_acceleration = self.fused_state.angle_acceleration
+
+        return state
 
 locHandler = LocHandler()
 
@@ -349,7 +390,7 @@ def main():
     rospy.Subscriber("/sim/velocity", Float32, locHandler.velocityCallback)
     rospy.Subscriber("/sim/control", Control, locHandler.controlCallback)
 
-    # Create a timer that calls timer_callback() with a period of 0.1
+    # Create a timer that calls timer_callback() with a period of 0.1, because most of our sensors update at 10 Hz
     rospy.Timer(rospy.Duration(0.1), publish)
 
     print("Localization node setup complete")
@@ -365,7 +406,7 @@ def publish(event):
     publisher.publish(locHandler.getState())
 
 
-
+# so if anything imports our code (documentation tools, linters, etc.) it isn't run automatically and things don't get broken
 if __name__ == "__main__":
     try:
         main()

@@ -11,4 +11,3 @@ build/
 
 # ingore compiled python files
 *.pyc
-#swc_ws/src/swc_daniel/src/LocHandler.pyc
