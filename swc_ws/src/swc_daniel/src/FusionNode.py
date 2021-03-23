@@ -23,15 +23,15 @@ DEFAULT_TRUST = {
 }
 
 class RobotState:
-    def __init__(self, x=0, y=0, velocity=0, accel=0, angle=0, angle_velocity=0, angle_accel=0, time=0, prev_time=0, trust_vals=DEFAULT_TRUST):
+    def __init__(self, x=0, y=0, velocity=0, acceleration=0, angle=0, angle_velocity=0, angle_acceleration=0, time=0, prev_time=0, trust_vals=DEFAULT_TRUST):
         self.x = x
         self.y = y
         self.velocity = velocity
-        self.accel = accel
+        self.acceleration = acceleration
 
         self.angle = angle
         self.angle_velocity = angle_velocity
-        self.angle_accel = angle_accel
+        self.angle_acceleration = angle_acceleration
 
         self.time = time
         self.prev_time = prev_time
@@ -55,6 +55,7 @@ class RobotState:
 # =======================================================================================================================
 # TODO WAIT NO MAKE AN INIT_STATE METHOD OF ALL THE HANDLERS THAT IS CALLED AT THE BEGINNING SO THEY KNOW THEIR POSITIONS (starting waypoints!) AND CAN GET THE PREV_STATE VAR INITED AND STUFF DANIEL YOU'RE A GENIUS (occasionaly)
 # TODO BUG FIXME XXX HACK the current else: State(x=-37) is wrong b/c we should treat it like (0, 0) and so also GPS callback is wrong so need to like +37 or something
+#TODO FIXME XXX BUG HACK wrap all these cos and sins in degrees() calls because that's what we all expect
 # =======================================================================================================================
 
 class VelocityHandler:
@@ -68,9 +69,11 @@ class VelocityHandler:
         self.x = 0
         self.y = 0
         self.velocity = 0
-        self.accel = 0
+        self.acceleration = 0
 
         self.angle = 0
+        self.angle_velocity = 0
+        self.angle_acceleration = 0
 
         self.time = 0
         self.hasRun = False
@@ -101,11 +104,11 @@ class ControlHandler:
         self.x = 0
         self.y = 0
         self.velocity = 0
-        self.accel = 0
+        self.acceleration = 0
 
         self.angle = 0
         self.angle_velocity = 0
-        self.angle_accel = 0
+        self.angle_acceleration = 0
 
         self.time = 0
         self.hasRun = False
@@ -160,11 +163,11 @@ class ImuHandler:
         self.x = 0
         self.y = 0
         self.velocity = 0
-        self.accel = 0
+        self.acceleration = 0
 
         self.angle = 0
         self.angle_velocity = 0
-        self.angle_accel = 0
+        self.angle_acceleration = 0
 
         self.time = 0
         self.hasRun = False
@@ -225,11 +228,11 @@ class GpsHandler:
         self.x = 0
         self.y = 0
         self.velocity = 0
-        self.accel = 0
+        self.acceleration = 0
 
         self.angle = 0
         self.angle_velocity = 0
-        self.angle_accel = 0
+        self.angle_acceleration = 0
 
         self.time = 0
         self.hasRun = False
@@ -250,17 +253,20 @@ class GpsHandler:
             
             try:
                 self.angle = atan((self.y - self.prev_state.y) / (self.x - self.prev_state.x))
-            except ZeroDivisionError:
+            except ZeroDivisionError as e:
+                print("zero division thingy happened")
                 self.angle = 0
             
             try:
                 self.angle_velocity = (self.angle - self.prev_state.angle) / delta_time
             except ZeroDivisionError:
+                print("zero division thingy happened")
                 self.angle_velocity = 0
             
             try:
                 self.angle_acceleration = (self.angle_velocity - self.prev_state.angle_velocity) / delta_time
             except ZeroDivisionError:
+                print("zero division thingy happened")
                 self.angle_acceleration = 0
     
             self.prev_state = RobotState(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
@@ -292,11 +298,11 @@ class FusedState:
         self.x = 0
         self.y = 0
         self.velocity = 0
-        self.accel = 0
+        self.acceleration = 0
 
         self.angle = 0
         self.angle_velocity = 0
-        self.angle_accel = 0
+        self.angle_acceleration = 0
     
     #TODO get better fusing algo because this just averages everything
     def update(self, *args):
@@ -306,19 +312,19 @@ class FusedState:
             self.x += state.x
             self.y += state.y
             self.velocity += state.velocity
-            self.accel += state.accel
+            self.acceleration += state.acceleration
 
             self.angle += state.angle
             self.angle_velocity += state.angle_velocity
-            self.angle_accel += state.angle_accel
+            self.angle_acceleration += state.angle_acceleration
         self.x /= total
         self.y /= total
         self.velocity /= total
-        self.accel /= total
+        self.acceleration /= total
 
         self.angle /= total
         self.angle_velocity /= total
-        self.angle_accel /= total
+        self.angle_acceleration /= total
 
 class LocHandler:
     def __init__(self):
@@ -374,16 +380,16 @@ def main():
 
     # Initalize our node in ROS
     rospy.init_node("fusion_node")
+    print("Fusion node initialized!")
 
     # Create a Publisher that we can use to publish messages to the /daniel/state topic
     publisher = rospy.Publisher("/daniel/state", State, queue_size=1)
 
     # Wait for Waypoints service and then request waypoints
-    rospy.wait_for_service("/sim/waypoints")
-    waypoints = rospy.ServiceProxy("/sim/waypoints", Waypoints)()
+    #rospy.wait_for_service("/sim/waypoints")
+    #waypoints = rospy.ServiceProxy("/sim/waypoints", Waypoints)()
     print("Waypoints aquired!")
 
-    
     # get sensor data
     rospy.Subscriber("/sim/gps", Gps, locHandler.gpsCallback)
     rospy.Subscriber("/sim/imu", Imu, locHandler.imuCallback)

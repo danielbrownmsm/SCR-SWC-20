@@ -3,7 +3,7 @@ devel/
 build/
 
 # Ignore dev directories
-.vscode/
+#.vscode/
 .idea/
 
 # Ignore temp files from assorted programs
