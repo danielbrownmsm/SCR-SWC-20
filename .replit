@@ -1,0 +1,2 @@
+language = "bash"
+run = "roslaunch swc_daniel swc_daniel.launch"

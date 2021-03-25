@@ -1,7 +1,20 @@
-controlHandler = LocHandler()
+class ControlHandler:
+	def __init__(self):
+		pass
+	
+	def stateCallback(self):
+		pass
+	
+	def obstacleCallback(self):
+		pass
+	
+	def getMessage(self):
+		pass
+
+controlHandler = ControlHandler()
 
 def main():
-    global locHandler
+    global controlHandler
     global publisher
 
     # Initalize our node in ROS
@@ -9,23 +22,21 @@ def main():
     print("Fusion node initialized!")
 
     # Create a Publisher that we can use to publish messages to the /daniel/state topic
-    publisher = rospy.Publisher("/daniel/state", State, queue_size=1)
+    publisher = rospy.Publisher("/sim/control", Control, queue_size=1)
 
     # Wait for Waypoints service and then request waypoints
     #rospy.wait_for_service("/sim/waypoints")
     #waypoints = rospy.ServiceProxy("/sim/waypoints", Waypoints)()
     print("Waypoints aquired!")
+	#TODO add PurePursuit and stuff
 
-    # get sensor data
-    rospy.Subscriber("/sim/gps", Gps, locHandler.gpsCallback)
-    rospy.Subscriber("/sim/imu", Imu, locHandler.imuCallback)
-    rospy.Subscriber("/sim/velocity", Float32, locHandler.velocityCallback)
-    rospy.Subscriber("/sim/control", Control, locHandler.controlCallback)
+    rospy.Subscriber("/daniel/state", State, controlHandler.stateCallback)
+    rospy.Subscriber("/daniel/obstacles", Obstacles, controlHandler.obstacleeCallback)
 
     # Create a timer that calls timer_callback() with a period of 0.1, because most of our sensors update at 10 Hz
     rospy.Timer(rospy.Duration(0.1), publish)
 
-    print("Localization node setup complete")
+    print("Control node setup complete")
 
     # Let ROS take control of this thread until a ROS wants to kill
     rospy.spin()
@@ -33,9 +44,9 @@ def main():
 def publish(event):
     # Publish the message to /daniel/state so the simulator receives it
     global publisher
-    global locHandler
+    global controlHandler
 
-    publisher.publish(locHandler.getState())
+    publisher.publish(controlHandler.getState())
 
 
 # so if anything imports our code (documentation tools, linters, etc.) it isn't run automatically and things don't get broken
