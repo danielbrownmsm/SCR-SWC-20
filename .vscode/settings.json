@@ -3,7 +3,7 @@
     "files.exclude": {
         "**/*.pyc": true
     },
-    "workbench.colorCustomizations": {
+    /*"workbench.colorCustomizations": {
         "window.activeBorder": "#000",
         "window.inactiveBorder": "#000",
 
@@ -106,6 +106,12 @@
         "gitDecoration.untrackedResourceForeground": "#204e1a",
         
         "editorGutter.addedBackground": "#006600",
+        "editor.wordHighlightBackground": "#ff0000", //TODO this yeah XXX FIXME BUG
+        "editor.wordHighlightStrongBackground": "#ff0000",
+        "searchEditor.findMatchBackground": "#ff0000",
+        "gitDecoration.addedResourceForeground": "#ff0000",
+        "gitDecoration.deletedResourceForeground": "#ff0000",
+        "editor.selectionHighlightBackground": "#0F0F0F"
    },
    "editor.tokenColorCustomizations": {
        "comments": "#064400",
@@ -115,5 +121,5 @@
        "numbers": "#007c85",
        "variables": "#060061",
        "types": "#021400",
-   }
+   }*/
 }

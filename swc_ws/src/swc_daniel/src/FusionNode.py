@@ -253,20 +253,17 @@ class GpsHandler:
             
             try:
                 self.angle = atan((self.y - self.prev_state.y) / (self.x - self.prev_state.x))
-            except ZeroDivisionError as e:
-                print("zero division thingy happened")
+            except ZeroDivisionError as e:                
                 self.angle = 0
             
             try:
                 self.angle_velocity = (self.angle - self.prev_state.angle) / delta_time
             except ZeroDivisionError:
-                print("zero division thingy happened")
                 self.angle_velocity = 0
             
             try:
                 self.angle_acceleration = (self.angle_velocity - self.prev_state.angle_velocity) / delta_time
             except ZeroDivisionError:
-                print("zero division thingy happened")
                 self.angle_acceleration = 0
     
             self.prev_state = RobotState(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)

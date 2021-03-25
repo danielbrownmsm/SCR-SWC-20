@@ -25,20 +25,24 @@ class PurePursuit:
     
     def fillPoints(self):
         finalPoints = []
+        someRandomThreshold = 0.2 # yeah every this meters seems fine
         
-        for point in self.points: # for each point in our list of goals
+        for index, point in enumerate(self.points): # for each point in our list of goals
             print("Adding point: " + str(point[0]) + ", " + str(point[1]))
             finalPoints.append(point) # add the point
             # atan2 b/c preserving sign or something that we might want idk
-            angle = atan2(point[1], point[0]) # that's probably right order of params TODO check
+            angle = degrees(atan2(point[1], point[0])) # that's probably right order of params TODO check
             
-            #TODO FIXME XXX BUG HACK wrap all these cos and sins in degrees() calls because that's what we all expect
             # for every point in between current and next increasing by someRandomThreshold along the same angle
-            for hyp in float_range(0, dist(point, points[+1]), someRandomThreshold):
-               new_x = cos(angle) * hyp # wait I don't need to recalc the cos() and sin() vals they stay the same
-               new_y = sin(angle) * hyp # but "premature optimization is the root of all evil" - some programmer so I'll just TODO make faster
-               finalPoints.append((new_x, new_y)) # add that point
-        
+            try:
+                for hyp in float_range(0, dist(point[0], point[1], self.points[index+1][0], self.points[index+1][1]), someRandomThreshold):
+                    new_x = degrees(cos(angle)) * hyp # wait I don't need to recalc the cos() and sin() vals they stay the same
+                    new_y = degrees(sin(angle)) * hyp # but "premature optimization is the root of all evil" - some programmer so I'll just TODO make faster
+                    finalPoints.append((new_x, new_y)) # add that point
+            except Exception as e:
+                print(e)
+                print("In Util.py in PurePursuit in fillPoints on " + str(point[0]) + ", " + str(point[1]))
+                
         self.points = finalPoints
         print("Points filled!")
 
