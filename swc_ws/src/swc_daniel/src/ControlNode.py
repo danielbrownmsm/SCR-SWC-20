@@ -1,39 +1,54 @@
-class ControlHandler:
-	def __init__(self):
-		pass
-	
-	def stateCallback(self):
-		pass
-	
-	def obstacleCallback(self):
-		pass
-	
-	def getMessage(self):
-		pass
+#!/usr/bin/env python
 
-controlHandler = ControlHandler()
+import rospy
+from Util import PIDController, PurePursuit, dist
+from swc_msgs.msg import State, Obstacles, Control
+from swc_msgs.srv import Waypoints
+
+class ControlHandler:
+    def __init__(self, waypoints):
+        self.state = State() # just the default values
+        self.obstacles = []
+        self.distancePID = PIDController(3, 0, 0.5) #TODO tune
+        self.headingPID = PIDController(0.2, 0.0001, 0.001) #TODO tune
+        self.path = waypoints # path will later hold additional points as needed to account for obstacles
+        self.pure_pursuit = PurePursuit(waypoints)
+    
+    def stateCallback(self, data):
+        self.state = data # HACK this probably doesn't work
+    
+    def obstacleCallback(self, data):
+        pass
+    
+    def getMessage(self):
+        msg = Control()
+        msg.speed = self.distancePID.calculate(dist(self.state.x, self.state.y, *self.pure_pursuit.getPoint())) # wait I can do asterik? Python is freakin' awesome
+        msg.angle = self.anglePID.calculate(self.state.angle, self.pure_pursuit.getHeading(self.state.x, self.state.y))
+        
+        return msg
+
 
 def main():
     global controlHandler
     global publisher
 
     # Initalize our node in ROS
-    rospy.init_node("fusion_node")
-    print("Fusion node initialized!")
+    rospy.init_node("control_node")
+    print("Control node initialized!")
 
     # Create a Publisher that we can use to publish messages to the /daniel/state topic
     publisher = rospy.Publisher("/sim/control", Control, queue_size=1)
 
     # Wait for Waypoints service and then request waypoints
-    #rospy.wait_for_service("/sim/waypoints")
-    #waypoints = rospy.ServiceProxy("/sim/waypoints", Waypoints)()
+    rospy.wait_for_service("/sim/waypoints")
+    waypoints = rospy.ServiceProxy("/sim/waypoints", Waypoints)()
     print("Waypoints aquired!")
-	#TODO add PurePursuit and stuff
-
+    
+    controlHandler = ControlHandler(waypoints)
+    
     rospy.Subscriber("/daniel/state", State, controlHandler.stateCallback)
     rospy.Subscriber("/daniel/obstacles", Obstacles, controlHandler.obstacleeCallback)
 
-    # Create a timer that calls timer_callback() with a period of 0.1, because most of our sensors update at 10 Hz
     rospy.Timer(rospy.Duration(0.1), publish)
 
     print("Control node setup complete")
@@ -46,7 +61,7 @@ def publish(event):
     global publisher
     global controlHandler
 
-    publisher.publish(controlHandler.getState())
+    publisher.publish(controlHandler.getMessage())
 
 
 # so if anything imports our code (documentation tools, linters, etc.) it isn't run automatically and things don't get broken
