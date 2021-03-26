@@ -20,6 +20,8 @@ from Util import latLonToXY, getYaw, dist
 # power stdv = 0.1
 # LIDAR and camera don't have noise (I know camera doesn't, pretty sure LIDAR doesn't)
 
+#TODO fix line endings, apparently they're mixed? VSCode could probably help. . . 
+
 DEFAULT_TRUST = {
     "x":1,
     "y":1,
@@ -71,6 +73,11 @@ VELOCITY_TRUST = {
 }
 
 class RobotState:
+    """A class to hold the state of a robot including position, velocity, and
+    acceleration, as well as their angular equivalents. How much you trust each
+    of those values (for use in a weighted average) can be modified by passing
+    a dictionary in for trust_vals
+    """
     def __init__(self, x=0, y=0, velocity=0, acceleration=0, angle=0, angle_velocity=0, angle_acceleration=0, timestamp=0, prev_timestamp=0, trust_vals=DEFAULT_TRUST):
         self.x = x
         self.y = y
@@ -94,21 +101,14 @@ class RobotState:
     # velocity += acceleration * time
     # position += velocity * time
 
-    # always work with the hypot if you have it because going from dist -> x, y adds error
 
-    def solveState(self):
-        pass
-    
-    def update(self):
-        pass
-
-# =======================================================================================================================
 # TODO WAIT NO MAKE AN INIT_STATE METHOD OF ALL THE HANDLERS THAT IS CALLED AT THE BEGINNING SO THEY KNOW THEIR POSITIONS (starting waypoints!) AND CAN GET THE PREV_STATE VAR INITED AND STUFF DANIEL YOU'RE A GENIUS (occasionaly)
 # TODO BUG FIXME XXX HACK the current else: State(x=-37) is wrong b/c we should treat it like (0, 0) and so also GPS callback is wrong so need to like +37 or something
 #TODO FIXME XXX BUG HACK wrap all these cos and sins in degrees() calls because that's what we all expect
-# =======================================================================================================================
 
 class VelocityHandler:
+    """A class to handle updating a state based on the /sim/velocity topic
+    """
     # for velocity you do
     #x = <trig>
     #y = <trig>
@@ -151,6 +151,8 @@ class VelocityHandler:
             self.hasRun = True
 
 class ControlHandler:
+    """A class to handle updating a state based on the /sim/control topic
+    """
     # pretty much the same as the IMU but Ackermann so blah and also terrible because it's terrible like what if you are running into an obstacle?
     def __init__(self):
         self.x = 0
@@ -191,6 +193,8 @@ class ControlHandler:
             self.hasRun = True
 
 class ImuHandler:
+    """A class to handle updating a state based on the /sim/imu topic
+    """
     # for the imu you do
     #delta_time = time - last_time
     # then
@@ -264,6 +268,8 @@ class ImuHandler:
             self.hasRun = True
         
 class GpsHandler:
+    """A class to handle updating a state based on the /sim/gps topic
+    """
     #delta_time = time - last_time
     #x, y = latLonToXY(gps.lat, gps.lon)
     #velocity = dist(x, y, last_x, last_y) / delta_time
@@ -330,6 +336,7 @@ class GpsHandler:
             self.hasRun = True
         
 class FusedState:
+    """A class fuse all of the sensors to get a pretty good idea of where we are at"""
     # first-order/top-level/whatever data:
     # x, y <- GPS
     # velocity <- velocity, control
@@ -389,6 +396,7 @@ class FusedState:
         self.angle_acceleration /= self.trust_angle_acceleration
 
 class LocHandler:
+    """A class to handle callbacks for all the wait actually I don't really need this?!?"""
     def __init__(self):
         self.imu_state = ImuHandler()
         self.gps_state = GpsHandler()

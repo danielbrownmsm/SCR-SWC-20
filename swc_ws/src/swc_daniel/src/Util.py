@@ -39,7 +39,7 @@ class PurePursuit:
                     new_x = degrees(cos(angle)) * hyp # wait I don't need to recalc the cos() and sin() vals they stay the same
                     new_y = degrees(sin(angle)) * hyp # but "premature optimization is the root of all evil" - some programmer so I'll just TODO make faster
                     finalPoints.append((new_x, new_y)) # add that point
-            except Exception as e:
+            except IndexError as e:
                 print(e)
                 print("In Util.py in PurePursuit in fillPoints on " + str(point[0]) + ", " + str(point[1]))
                 
@@ -62,7 +62,7 @@ class PurePursuit:
             elif dist(curr_state.x, curr_state.y, lastPoint[0], lastPoint[1]) < self.lookahead_distance: # if we're pretty much at the end
                 self.goalPoint = lastPoint
                 return degrees(atan((lastPoint[0] - curr_state.x) / (lastPoint[1] - curr_state.y))) # same thing but with the last point
-        # if we somehow got here,
+        # if we somehow got here,TODO i think there's an edge case I'm missing
         print("What the heck are you doing here?")
         return curr_state.angle
     
@@ -111,10 +111,6 @@ class PIDController:
     
     def setThreshold(self, threshold):
         self.threshold = threshold
-    
-    def reset():
-        #TODO do we even need this?
-        pass
 
 # Good ol' distance formula
 def dist(x1, y1, x2, y2):
