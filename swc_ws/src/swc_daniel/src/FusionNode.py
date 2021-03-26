@@ -1,29 +1,77 @@
 #!/usr/bin/env python
 
 import time
-from math import cos, sin, atan2, atan
+from math import cos, sin, atan
 
 import rospy
 from std_msgs.msg import Float32
 from sensor_msgs.msg import Imu
 from swc_msgs.msg import State, Gps, Control
-from swc_msgs.srv import Waypoints
-
 from Util import latLonToXY, getYaw, dist
 
-#TODO either use or remove
+# pretty sure sensor data becomes noisier the faster you go
+# latitude stdv = 1.843 <- meters varies, not gps lat/lon
+# longitude stdv = 2.138
+# accel stdv = 0.15
+# orientation stdv = 0.017
+# angle vel stdv = 0.017
+# vel stdv = 0.1
+# angle stdv = 0.4
+# power stdv = 0.1
+# LIDAR and camera don't have noise (I know camera doesn't, pretty sure LIDAR doesn't)
+
 DEFAULT_TRUST = {
     "x":1,
     "y":1,
     "velocity":1,
-    "accel":1,
+    "acceleration":1,
     "angle":1,
     "angle_velocity":1,
-    "angle_accel":1
+    "angle_acceleration":1
+}
+
+GPS_TRUST = {
+    "x":2,
+    "y":2,
+    "velocity":0.5,
+    "accel":0.5,
+    "angle":0.5,
+    "angle_velocity":0.5,
+    "angle_acceleration":0.5
+}
+
+IMU_TRUST = {
+    "x":0.25,
+    "y":0.25,
+    "velocity":0.5,
+    "accel":1,
+    "angle":3,
+    "angle_velocity":3,
+    "angle_acceleration":3
+}
+
+CONTROL_TRUST = {
+    "x":0.9,
+    "y":0.9,
+    "velocity":2,
+    "accel":1,
+    "angle":0.6,
+    "angle_velocity":0.4,
+    "angle_acceleration":0.2
+}
+
+VELOCITY_TRUST = {
+    "x":1,
+    "y":1,
+    "velocity":3,
+    "accel":2,
+    "angle":0.5,
+    "angle_velocity":0.5,
+    "angle_acceleration":0.5
 }
 
 class RobotState:
-    def __init__(self, x=0, y=0, velocity=0, acceleration=0, angle=0, angle_velocity=0, angle_acceleration=0, time=0, prev_time=0, trust_vals=DEFAULT_TRUST):
+    def __init__(self, x=0, y=0, velocity=0, acceleration=0, angle=0, angle_velocity=0, angle_acceleration=0, timestamp=0, prev_timestamp=0, trust_vals=DEFAULT_TRUST):
         self.x = x
         self.y = y
         self.velocity = velocity
@@ -33,10 +81,12 @@ class RobotState:
         self.angle_velocity = angle_velocity
         self.angle_acceleration = angle_acceleration
 
-        self.time = time
-        self.prev_time = prev_time
+        self.timestamp = timestamp
+        self.prev_timestamp = prev_timestamp
 
         self.prev_state = None
+
+        self.trust_vals = trust_vals
 
     # acceleration = change velocity / change time
     # velocity = change position / change time
@@ -75,14 +125,16 @@ class VelocityHandler:
         self.angle_velocity = 0
         self.angle_acceleration = 0
 
-        self.time = 0
+        self.timestamp = 0
         self.hasRun = False
         self.prev_state = None
+
+        self.trust_vals = VELOCITY_TRUST
     
     def update(self, data, angle):
         if self.hasRun:
-            self.time = time.time()
-            delta_time = self.time - self.prev_state.time
+            self.timestamp = time.time()
+            delta_time = self.timestamp - self.prev_state.timestamp
             
             self.angle = angle
             self.angle_velocity = (self.angle - self.prev_state.angle) / delta_time
@@ -93,9 +145,9 @@ class VelocityHandler:
             self.x = self.prev_state.x + self.velocity * cos(self.angle) * delta_time # trig done
             self.y = self.prev_state.y + self.velocity * sin(self.angle) * delta_time
             
-            self.prev_state = RobotState(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
+            self.prev_state = RobotState(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.timestamp, self.prev_state.timestamp, VELOCITY_TRUST)
         else:
-            self.prev_state = RobotState(x=-37, y=0, time=time.time())
+            self.prev_state = RobotState(x=-37, y=0, timestamp=time.time())
             self.hasRun = True
 
 class ControlHandler:
@@ -110,14 +162,16 @@ class ControlHandler:
         self.angle_velocity = 0
         self.angle_acceleration = 0
 
-        self.time = 0
+        self.timestamp = 0
         self.hasRun = False
         self.prev_state = None
-    
+        
+        self.trust_vals = CONTROL_TRUST
+
     def update(self, data):
         if self.hasRun:
-            self.time = time.time()
-            delta_time = self.time - self.prev_state.time
+            self.timestamp = time.time()
+            delta_time = self.timestamp - self.prev_state.timestamp
             
             # angle before position because integrated for position needs the angle for the trig
             #TODO fix because we only actual change our heading if we are going forwards so 20 deg at 1 m/s for X seconds is less than 20 deg at 4 m/s
@@ -131,9 +185,9 @@ class ControlHandler:
             self.x = self.prev_state.x + self.velocity * cos(self.angle) * delta_time # trig done
             self.y = self.prev_state.y + self.velocity * sin(self.angle) * delta_time
             
-            self.prev_state = RobotState(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
+            self.prev_state = RobotState(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.timestamp, self.prev_state.timestamp, CONTROL_TRUST)
         else:
-            self.prev_state = RobotState(x=-37, y=0, time=time.time())
+            self.prev_state = RobotState(x=-37, y=0, timestamp=time.time())
             self.hasRun = True
 
 class ImuHandler:
@@ -169,14 +223,16 @@ class ImuHandler:
         self.angle_velocity = 0
         self.angle_acceleration = 0
 
-        self.time = 0
+        self.timestamp = 0
         self.hasRun = False
         self.prev_state = None
+
+        self.trust_vals = IMU_TRUST
     
     def update(self, data):
         if self.hasRun:
-            self.time = time.time()
-            delta_time = self.time - self.prev_state.time
+            self.timestamp = time.time()
+            delta_time = self.timestamp - self.prev_state.timestamp
             
             # angle before position because integrated for position needs the angle for the trig
             poss_angle_o = getYaw(data.orientation)
@@ -202,9 +258,9 @@ class ImuHandler:
             # cos(self.angle) = x / hyp -> cos(angle) * hyp = x
             # sin(self.angle) = y / hyp
 
-            self.prev_state = RobotState(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
+            self.prev_state = RobotState(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.timestamp, self.prev_state.timestamp, IMU_TRUST)
         else:
-            self.prev_state = RobotState(x=-37, y=0, time=time.time())
+            self.prev_state = RobotState(x=-37, y=0, timestamp=time.time())
             self.hasRun = True
         
 class GpsHandler:
@@ -234,14 +290,16 @@ class GpsHandler:
         self.angle_velocity = 0
         self.angle_acceleration = 0
 
-        self.time = 0
+        self.timestamp = 0
         self.hasRun = False
         self.prev_state = None
-    
+
+        self.trust_vals = GPS_TRUST
+
     def update(self, data):
         if self.hasRun: # if we've already had a state to compare to
-            self.time = time.time()
-            delta_time = self.time - self.prev_state.time
+            self.timestamp = time.time()
+            delta_time = self.timestamp - self.prev_state.timestamp
 
             if delta_time <= 0: # this shouldn't happen and will lead to bad
                 # so run, run away Simba, and never
@@ -253,7 +311,7 @@ class GpsHandler:
             
             try:
                 self.angle = atan((self.y - self.prev_state.y) / (self.x - self.prev_state.x))
-            except ZeroDivisionError as e:                
+            except ZeroDivisionError:                
                 self.angle = 0
             
             try:
@@ -266,9 +324,9 @@ class GpsHandler:
             except ZeroDivisionError:
                 self.angle_acceleration = 0
     
-            self.prev_state = RobotState(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.time, self.prev_state.time, DEFAULT_TRUST)
+            self.prev_state = RobotState(self.x, self.y, self.velocity, self.acceleration, self.angle, self.angle_velocity, self.angle_acceleration, self.timestamp, self.prev_state.timestamp, GPS_TRUST)
         else:
-            self.prev_state = RobotState(x=-37, y=0, time=time.time())
+            self.prev_state = RobotState(x=-37, y=0, timestamp=time.time())
             self.hasRun = True
         
 class FusedState:
@@ -278,18 +336,7 @@ class FusedState:
     # acceleration <- IMU
     # angle <- control, IMU
     # angle_vel <- IMU
-    # angle_accel <- IMU
-
-    # pretty sure sensor data becomes noisier the faster you go
-    # latitude stdv = 1.843 <- meters varies, not gps lat/lon
-    # longitude stdv = 2.138
-    # accel stdv = 0.15
-    # orientation stdv = 0.017
-    # angle vel stdv = 0.017
-    # vel stdv = 0.1
-    # angle stdv = 0.4
-    # power stdv = 0.1
-    # LIDAR and camera don't have noise (I know camera doesn't, pretty sure LIDAR doesn't)
+    # angle_acceleration <- IMU
 
     def __init__(self):
         self.x = 0
@@ -300,28 +347,46 @@ class FusedState:
         self.angle = 0
         self.angle_velocity = 0
         self.angle_acceleration = 0
+
+        #trusts (for weighted average
+        self.trust_x = 0
+        self.trust_y = 0
+        self.trust_velocity = 0
+        self.trust_acceleration = 0
+
+        self.trust_angle = 0
+        self.trust_angle_velocity = 0
+        self.trust_angle_acceleration = 0
     
-    #TODO get better fusing algo because this just averages everything
+    # does a weighted average based on how much you trust the data from each state based on stuff like standard deviation for that and stuff TODO test yeah whatevver
     def update(self, *args):
-        total = len(args) # however many states you want is what you get
-
         for state in args:
-            self.x += state.x
-            self.y += state.y
-            self.velocity += state.velocity
-            self.acceleration += state.acceleration
+            self.x += state.x * state.trust_vals["x"]
+            self.y += state.y * state.trust_vals["y"]
+            self.velocity += state.velocity * state.trust_vals["velocity"]
+            self.acceleration += state.acceleration * state.trust_vals["acceleration"]
 
-            self.angle += state.angle
-            self.angle_velocity += state.angle_velocity
-            self.angle_acceleration += state.angle_acceleration
-        self.x /= total
-        self.y /= total
-        self.velocity /= total
-        self.acceleration /= total
+            self.angle += state.angle * state.trust_vals["angle"]
+            self.angle_velocity += state.angle_velocity * state.trust_vals["angle_velocity"]
+            self.angle_acceleration += state.angle_acceleration * state.trust_vals["angle_acceleration"]
 
-        self.angle /= total
-        self.angle_velocity /= total
-        self.angle_acceleration /= total
+            self.trust_x += state.trust_vals["x"]
+            self.trust_y += state.trust_vals["y"]
+            self.trust_velocity += state.trust_vals["velocity"]
+            self.trust_acceleration += state.trust_vals["acceleration"]
+
+            self.trust_angle += state.trust_vals["angle"]
+            self.trust_angle_velocity += state.trust_vals["angle_velocity"]
+            self.trust_angle_acceleration += state.trust_vals["angle_acceleration"]
+
+        self.x /= self.trust_x
+        self.y /= self.trust_y
+        self.velocity /= self.trust_velocity
+        self.acceleration /= self.trust_acceleration
+
+        self.angle /= self.trust_angle
+        self.angle_velocity /= self.trust_angle_velocity
+        self.angle_acceleration /= self.trust_angle_acceleration
 
 class LocHandler:
     def __init__(self):
@@ -370,6 +435,7 @@ class LocHandler:
         return state
 
 locHandler = LocHandler()
+publisher = None
 
 def main():
     global locHandler
@@ -381,11 +447,6 @@ def main():
 
     # Create a Publisher that we can use to publish messages to the /daniel/state topic
     publisher = rospy.Publisher("/daniel/state", State, queue_size=1)
-
-    # Wait for Waypoints service and then request waypoints
-    #rospy.wait_for_service("/sim/waypoints")
-    #waypoints = rospy.ServiceProxy("/sim/waypoints", Waypoints)()
-    print("Waypoints aquired!")
 
     # get sensor data
     rospy.Subscriber("/sim/gps", Gps, locHandler.gpsCallback)

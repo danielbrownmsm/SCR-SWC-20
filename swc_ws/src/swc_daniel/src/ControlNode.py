@@ -10,9 +10,9 @@ class ControlHandler:
         self.state = State() # just the default values
         self.obstacles = []
         self.distancePID = PIDController(3, 0, 0.5) #TODO tune
-        self.headingPID = PIDController(0.2, 0.0001, 0.001) #TODO tune
+        self.anglePID = PIDController(0.2, 0.0001, 0.001) #TODO tune
         self.path = waypoints # path will later hold additional points as needed to account for obstacles
-        self.pure_pursuit = PurePursuit(waypoints)
+        self.pure_pursuit = PurePursuit(waypoints, 1) #TODO tune lookahead dist
     
     def stateCallback(self, data):
         self.state = data # HACK this probably doesn't work
@@ -22,8 +22,9 @@ class ControlHandler:
     
     def getMessage(self):
         msg = Control()
-        msg.speed = self.distancePID.calculate(dist(self.state.x, self.state.y, *self.pure_pursuit.getPoint())) # wait I can do asterik? Python is freakin' awesome
-        msg.angle = self.anglePID.calculate(self.state.angle, self.pure_pursuit.getHeading(self.state.x, self.state.y))
+        msg.speed = self.distancePID.calculate(dist(self.state.x, self.state.y, *self.pure_pursuit.getGoalPoint())) # wait I can do asterik? Python is freakin' awesome
+        self.anglePID.setSetpoint(self.pure_pursuit.getNextHeading(self.state))
+        msg.angle = self.anglePID.calculate(self.state.angle)
         
         return msg
 
@@ -47,7 +48,7 @@ def main():
     controlHandler = ControlHandler(waypoints)
     
     rospy.Subscriber("/daniel/state", State, controlHandler.stateCallback)
-    rospy.Subscriber("/daniel/obstacles", Obstacles, controlHandler.obstacleeCallback)
+    rospy.Subscriber("/daniel/obstacles", Obstacles, controlHandler.obstacleCallback)
 
     rospy.Timer(rospy.Duration(0.1), publish)
 
@@ -55,6 +56,9 @@ def main():
 
     # Let ROS take control of this thread until a ROS wants to kill
     rospy.spin()
+
+publisher = None
+controlHandler = None
 
 def publish(event):
     # Publish the message to /daniel/state so the simulator receives it
