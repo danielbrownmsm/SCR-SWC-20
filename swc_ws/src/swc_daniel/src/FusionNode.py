@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function, division
 import time
 from math import cos, sin, atan
 
@@ -20,8 +21,8 @@ from Util import latLonToXY, getYaw, dist
 # power stdv = 0.1
 # LIDAR and camera don't have noise (I know camera doesn't, pretty sure LIDAR doesn't)
 
-#TODO fix line endings, apparently they're mixed? VSCode could probably help. . . 
-
+#TODO fix line endings, apparently they're mixed? VSCode could probably help. . .  no it can't. . . whatever
+#TODO make all these dicts into objects of some TrustVals class or something. There's got to be a better way. . .
 DEFAULT_TRUST = {
     "x":1,
     "y":1,
@@ -36,7 +37,7 @@ GPS_TRUST = {
     "x":2,
     "y":2,
     "velocity":0.5,
-    "accel":0.5,
+    "acceleration":0.5,
     "angle":0.5,
     "angle_velocity":0.5,
     "angle_acceleration":0.5
@@ -46,7 +47,7 @@ IMU_TRUST = {
     "x":0.25,
     "y":0.25,
     "velocity":0.5,
-    "accel":1,
+    "acceleration":1,
     "angle":3,
     "angle_velocity":3,
     "angle_acceleration":3
@@ -56,7 +57,7 @@ CONTROL_TRUST = {
     "x":0.9,
     "y":0.9,
     "velocity":2,
-    "accel":1,
+    "acceleration":1,
     "angle":0.6,
     "angle_velocity":0.4,
     "angle_acceleration":0.2
@@ -66,7 +67,7 @@ VELOCITY_TRUST = {
     "x":1,
     "y":1,
     "velocity":3,
-    "accel":2,
+    "acceleration":2,
     "angle":0.5,
     "angle_velocity":0.5,
     "angle_acceleration":0.5

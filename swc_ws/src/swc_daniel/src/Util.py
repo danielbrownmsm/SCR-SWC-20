@@ -1,6 +1,8 @@
 #from LocHandler import RobotState
+from __future__ import print_function, division
 from math import sqrt, atan, degrees, atan2, cos, sin
-import tf, time
+import time
+import tf
 
 
 def float_range(start, end, step):
@@ -24,6 +26,7 @@ class PurePursuit:
         self.fillPoints()
     
     def fillPoints(self):
+        """Fills the points between goals so we can do good turning and stuff probably"""
         finalPoints = []
         someRandomThreshold = 0.2 # yeah every this meters seems fine
         
@@ -47,6 +50,7 @@ class PurePursuit:
         print("Points filled!")
 
     def getNextHeading(self, curr_state):
+        """Gets the next heading we should take based on our current location and the path"""
         #TODO rewrite this plz this looks terrible and is most likely wrong
         lastPoint = self.points[-1] # did I ever mention how much I love Python and negative indexing?
 
@@ -67,6 +71,7 @@ class PurePursuit:
         return curr_state.angle
     
     def getGoalPoint(self):
+        """Gets the goal point we are returning for heading so our distance PID can use it for distance PID purposes"""
         # !todo eliminate the reason for this being here oh wait it's here for distance PID purposes nvm
         return self.goalPoint
 
@@ -89,11 +94,8 @@ class PIDController:
         self.time = 0
         self.lasttime = 0
     
-    def calculateSetpoint(self, measurement, setpoint):
-        self.setpoint = setpoint
-        self.calculate(measurement)
-    
     def calculate(self, measurement):
+        """Gets the output of the PID based on the setpoint and the given measure of the system's state and stuff"""
         self.error = measurement - self.setpoint
         self.velocity_error = (self.error - self.lastError) / (time.time() - self.lasttime) #idk why it's called velocity that's what WPILib says but it makes sense
         self.totalError += self.error
@@ -104,38 +106,45 @@ class PIDController:
         return output
 
     def setSetpoint(self, setpoint):
+        """Sets the setpoint of the PID controller"""
         self.setpoint = setpoint
     
     def atSetpoint(self):
+        """Gets if we've reached the setpoint (and, if using a kD term, if we've been there long enough kinda)"""
         return abs(self.error) < self.threshold and abs(self.velocity_error) < self.velocity_threshold
     
     def setThreshold(self, threshold):
+        """Setst the threshold for if we're at the setpoint or not"""
         self.threshold = threshold
 
 # Good ol' distance formula
 def dist(x1, y1, x2, y2):
+    """Basically just distance formula"""
     return sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
-"""
-un-optimized version
-def xyToLatLon(x, y):
-    lat0Pos = 35.205853
-    lon0Pos = -97.442325
 
-    latitude = (y + noise) / 110944.33 + lat0Pos
-    longitude = (x + noise) / 91058.93 + lon0Pos
-    return latitude, longitude"""
+#un-optimized version
+#def xyToLatLon(x, y):
+#    lat0Pos = 35.205853
+#    lon0Pos = -97.442325
+#
+#    latitude = (y + noise) / 110944.33 + lat0Pos
+#    longitude = (x + noise) / 91058.93 + lon0Pos
+#    return latitude, longitude
 
 # this is copied from the sim code
 def xyToLatLon(x, y):
-    return (y / 110944.33 + 35.205853, x / 91058.93 + -97.442325)
+    """So from the simulator code this is how they do x, y -> lat, lon"""
+    return (y / 110944.33 + 35.205853, x / 91058.93 + -97.442325) #TODO I think these are also in wrong order
 
 # this is just the inverse of the above
 def latLonToXY(lat, lon): # TODO XXX BUG FIXME
+    """The inverse of xyToLatLon, which _should_ be accurate as it was copypasta-ed from the simulator code"""
     return ((lat - 35.205853) * 110944.33, (lon - -97.442325) * 91058.93)[::-1] #TODO fix these, returns in wrong order
 
 
 # Copied directly from whatever worked in Robot.py
 def getYaw(quat):
+    """Gets the rotation around the Z axis (so, yaw/heading) from a quaternion. Copied from Ye Olde Robot.py"""
     explicit_quat = [quat.x, quat.y, quat.z, quat.w] # this is a workaround for types not playing nice
     return tf.transformations.euler_from_quaternion(explicit_quat)[2] # get a euler, yaw is second angle of it

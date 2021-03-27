@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
+from __future__ import print_function, division
+
 import rospy
-from Util import PIDController, PurePursuit, dist
+from Util import PIDController, PurePursuit, dist, latLonToXY
 from swc_msgs.msg import State, Obstacles, Control
 from swc_msgs.srv import Waypoints
 
@@ -24,7 +26,7 @@ class ControlHandler:
         msg = Control()
         msg.speed = self.distancePID.calculate(dist(self.state.x, self.state.y, *self.pure_pursuit.getGoalPoint())) # wait I can do asterik? Python is freakin' awesome
         self.anglePID.setSetpoint(self.pure_pursuit.getNextHeading(self.state))
-        msg.angle = self.anglePID.calculate(self.state.angle)
+        msg.turn_angle = self.anglePID.calculate(self.state.angle)
         
         return msg
 
@@ -44,8 +46,16 @@ def main():
     rospy.wait_for_service("/sim/waypoints")
     waypoints = rospy.ServiceProxy("/sim/waypoints", Waypoints)()
     print("Waypoints aquired!")
-    
-    controlHandler = ControlHandler(waypoints)
+    #print("waypoints:")
+    #print(waypoints)
+    #print(dir(waypoints))
+
+    #TODO do some handling of the waypoints (ie convert to xy) before passing to controlHandler
+    new_points = []
+    for waypoint in waypoints.waypoints:
+        new_points.append(latLonToXY(waypoint.latitude, waypoint.longitude))
+
+    controlHandler = ControlHandler(new_points)
     
     rospy.Subscriber("/daniel/state", State, controlHandler.stateCallback)
     rospy.Subscriber("/daniel/obstacles", Obstacles, controlHandler.obstacleCallback)
