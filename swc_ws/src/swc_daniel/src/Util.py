@@ -136,12 +136,13 @@ def dist(x1, y1, x2, y2):
 # this is copied from the sim code
 def xyToLatLon(x, y):
     """So from the simulator code this is how they do x, y -> lat, lon"""
-    return (y / 110944.33 + 35.205853, x / 91058.93 + -97.442325) #TODO I think these are also in wrong order
+    return (y / 110944.33 + 35.205853, x / 91058.93 + -97.442325)
 
 # this is just the inverse of the above
-def latLonToXY(lat, lon): # TODO XXX BUG FIXME
-    """The inverse of xyToLatLon, which _should_ be accurate as it was copypasta-ed from the simulator code"""
-    return ((lat - 35.205853) * 110944.33, (lon - -97.442325) * 91058.93)[::-1] #TODO fix these, returns in wrong order
+def latLonToXY(lat, lon):
+    """The inverse of xyToLatLon, which _should_ be accurate as it was copypasta-ed from the simulator code
+    +37 because sim considers (0, 0) to be center of field, but we have origin at robot pose"""
+    return ((lon - -97.442325) * 91058.93, 37 + (lat - 35.205853) * 110944.33)
 
 
 # Copied directly from whatever worked in Robot.py

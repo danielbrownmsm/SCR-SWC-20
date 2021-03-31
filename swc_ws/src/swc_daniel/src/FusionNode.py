@@ -71,6 +71,19 @@ class RobotState:
     # velocity += acceleration * time
     # position += velocity * time
 
+    def __str__(self):
+        string = ""
+        string += "x: " + str(self.x) + "\n"
+        string += "y: " + str(self.y) + "\n"
+        string += "velocity: " + str(self.velocity) + "\n"
+        #string += "acceleration: " + str(self.acceleration) + "\n\n"
+
+        string += "angle: " + str(self.angle) + "\n"
+        #string += "angle_velocity: " + str(self.angle_velocity) + "\n"
+        #string += "angle_acceleration: " + str(self.angle_acceleration)
+
+        return string
+
 
 class VelocityHandler:
     """A class to handle updating a state based on the /sim/velocity topic
@@ -144,7 +157,7 @@ class ControlHandler:
             # angle before position because integrated for position needs the angle for the trig
             #TODO fix because we only actual change our heading if we are going forwards so 20 deg at 1 m/s for X seconds is less than 20 deg at 4 m/s
             # yeah we need to do some forward kinematics or something
-            self.angle = self.prev_state.angle + data.turn_angle
+            self.angle = self.prev_state.angle# + data.turn_angle HACK disabled for now
             self.angle_velocity = (self.angle - self.prev_state.angle) / delta_time
             self.angle_acceleration = (self.angle_velocity - self.prev_state.angle_velocity) / delta_time
 
@@ -301,7 +314,7 @@ class GpsHandler:
             self.prev_state = RobotState(x=0, y=0, timestamp=time.time())
             self.hasRun = True
         
-class FusedState:
+class FusedState: #TODO wait why is this here this is just RobotState what the actual heck was I doing when writing this code?
     """A class fuse all of the sensors to get a pretty good idea of where we are at"""
     # first-order/top-level/whatever data:
     # x, y <- GPS
@@ -360,6 +373,19 @@ class FusedState:
         self.angle /= self.trust_angle
         self.angle_velocity /= self.trust_angle_velocity
         self.angle_acceleration /= self.trust_angle_acceleration
+    
+    def __str__(self):
+        string = ""
+        string += "x: " + str(self.x) + "\n"
+        string += "y: " + str(self.y) + "\n"
+        string += "velocity: " + str(self.velocity) + "\n"
+        #string += "acceleration: " + str(self.acceleration) + "\n\n"
+
+        string += "angle: " + str(self.angle) + "\n"
+        #string += "angle_velocity: " + str(self.angle_velocity) + "\n"
+        #string += "angle_acceleration: " + str(self.angle_acceleration)
+
+        return string
 
 class LocHandler:
     """A class to handle callbacks for all the wait actually I don't really need this?!?"""
@@ -410,6 +436,7 @@ class LocHandler:
 
 locHandler = LocHandler()
 publisher = None
+ticks = 0
 
 def main():
     global locHandler
@@ -440,9 +467,13 @@ def publish(event):
     # Publish the message to /daniel/state so the simulator receives it
     global publisher
     global locHandler
+    global ticks
 
     _state = locHandler.getState()
-    print(_state)
+    if ticks % 10 == 0:
+        print(locHandler.ctrl_state.prev_state)
+        print()
+    ticks += 1
     publisher.publish(_state)
 
 
@@ -452,3 +483,10 @@ if __name__ == "__main__":
         main()
     except rospy.ROSInterruptException:
         pass
+
+#Problems:
+#   - GPS angle stuff seems really messed up
+#   - IMU isn't doing right angle either, maybe it's returning RAD instead of DEG?
+#   - IMU seems to be whack with velocity, thinking rest is -2 and max is 4/-11, maybe not initialized right?
+#   - velocity works nice but is screwed over by IMU angle so pos is dead-wrong
+#   - control untested, but is also probably ABSOLUTE TRASH

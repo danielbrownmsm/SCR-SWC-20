@@ -50,7 +50,6 @@ def main():
     #print(waypoints)
     #print(dir(waypoints))
 
-    #TODO do some handling of the waypoints (ie convert to xy) before passing to controlHandler
     new_points = []
     for waypoint in waypoints.waypoints:
         new_points.append(latLonToXY(waypoint.latitude, waypoint.longitude))
