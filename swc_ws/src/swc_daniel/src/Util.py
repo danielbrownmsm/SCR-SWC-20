@@ -5,7 +5,7 @@ import time
 import tf
 
 
-def float_range(start, end, step):
+def frange(start, end, step):
     """
     Ooh a docstring yes very programmer much skilled
     This is basically range() but it works with decimal values, exactly like you'd expect. Python you let me down by not having this
@@ -17,63 +17,46 @@ def float_range(start, end, step):
     yield running_total # b/c it's added but not yielded because then while exits
     yield end # final case
 
-class PurePursuit:
-    """A very trashy pure-pursuit controller"""
-    def __init__(self, points, lookahead_distance):
-        self.points = points
-        self.goalPoint = [0, 0]
-        self.lookahead_distance = lookahead_distance
-        self.fillPoints()
+class PurePursuit(object):
+    def __init__(self, points, lookahead):
+        self.lookahead = lookahead
+        self.points = self.fillPoints(points)
+        self.goal = (0, 0)
     
-    def fillPoints(self):
-        """Fills the points between goals so we can do good turning and stuff probably"""
-        finalPoints = []
-        someRandomThreshold = 0.2 # yeah every this meters seems fine
-        
-        for index, point in enumerate(self.points): # for each point in our list of goals
-            print("Adding point: " + str(point[0]) + ", " + str(point[1]))
-            finalPoints.append(point) # add the point
-            # atan2 b/c preserving sign or something that we might want idk
-            angle = degrees(atan2(point[1], point[0])) # that's probably right order of params TODO check
-            
-            # for every point in between current and next increasing by someRandomThreshold along the same angle
+    def fillPoints(self, points):
+        newPoints = []
+        for index, point in enumerate(points): # for each point in the given list of points
+            newPoints.append(point) # add that point to our new list
             try:
-                for hyp in float_range(0, dist(point[0], point[1], self.points[index+1][0], self.points[index+1][1]), someRandomThreshold):
-                    new_x = degrees(cos(angle)) * hyp # wait I don't need to recalc the cos() and sin() vals they stay the same
-                    new_y = degrees(sin(angle)) * hyp # but "premature optimization is the root of all evil" - some programmer so I'll just TODO make faster
-                    finalPoints.append((new_x, new_y)) # add that point
-            except IndexError as e:
-                print(e)
-                print("In Util.py in PurePursuit in fillPoints on " + str(point[0]) + ", " + str(point[1]))
-                
-        self.points = finalPoints
-        print("Points filled!")
+                nextPoint = points[index + 1] # get the next point
+            except IndexError: # if that was the last point
+                break # out of loop preferrably, not entire function
 
-    def getNextHeading(self, curr_state):
-        """Gets the next heading we should take based on our current location and the path"""
-        #TODO rewrite this plz this looks terrible and is most likely wrong
-        lastPoint = self.points[-1] # did I ever mention how much I love Python and negative indexing?
+            angle = atan((point[0] - nextPoint[0]) / (point[1] - nextPoint[1])) # we don't need to wrap anything here in degrees() because everything expects radians and this returns radians so we good
+            distance = pointDist(point, nextPoint) # the distance between current and next point (next point in list of points given)
+            for length in frange(0.2, distance, 0.2): # for each point we want to add stepping by 0.2
+                x = cos(angle) * length  +  point[0] # add that point along the angle plus our current location
+                y = sin(angle) * length  +  point[1] # there's probably a better way to do this but whatever
+                newPoints.append((x, y)) # add it to the list
 
-        # for every point in the list (requires list of points to be sorted in order of when you want to hit them)
-        for index, point in enumerate(self.points):
-            if dist(curr_state.x, curr_state.y, point[0], point[1]) > self.lookahead_distance: # if we've gone to far
-                targetPoint = self.points[index - 1] # then we want the point just before this
-                self.goalPoint = targetPoint
-
-                # angle between current and goal (probably/hopefully/blame Justin Z)
-                return degrees(atan((targetPoint[0] - curr_state.x) / (targetPoint[1] - curr_state.y)))
-
-            elif dist(curr_state.x, curr_state.y, lastPoint[0], lastPoint[1]) < self.lookahead_distance: # if we're pretty much at the end
-                self.goalPoint = lastPoint
-                return degrees(atan((lastPoint[0] - curr_state.x) / (lastPoint[1] - curr_state.y))) # same thing but with the last point
-        # if we somehow got here,TODO i think there's an edge case I'm missing
-        print("What the heck are you doing here?")
-        return curr_state.angle
+        return newPoints
     
+    def getNextHeading(self, state):
+        # really un-optimized. Best case is O(1) when we're at the end of the line, second best is O(lookahead / 0.2) when we're just starting,
+        # worse case is ~O(n / 0.2) when we're close to the end and have to search through all the points
+        # average is like O(n/2 / 0.2) when we're in the middle I guess. If I wanted to I could add like a lastGoalPoint and just start search
+        # a couple back from that to get like O(lookahead / 0.2) which is pretty good
+        for index, point in enumerate(self.points): # for each of the points in our path
+            if dist(state.x, state.y, *point) > self.lookahead: # if the point is too far
+                self.goal = self.points[index - 1] # then go back one, because we know the points are sorted because we put them there
+            elif pointDist(point, self.points[-1]) < self.lookahead: # if we're seeing the end of the line
+                self.goal = self.points[-1]
+        
+        return #TODO make it return heading
+
+
     def getGoalPoint(self):
-        """Gets the goal point we are returning for heading so our distance PID can use it for distance PID purposes"""
-        # !todo eliminate the reason for this being here oh wait it's here for distance PID purposes nvm
-        return self.goalPoint
+        return self.goal
 
 class PIDController:
     """A very trashy PID Controller that is basically just WPILib's but python"""
@@ -122,6 +105,9 @@ def dist(x1, y1, x2, y2):
     """Basically just distance formula"""
     return sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
+def pointDist(point1, point2):
+    """Basically just distance formula but for working with tuples representing points for convienence"""
+    return sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
 
 #un-optimized version
 #def xyToLatLon(x, y):
