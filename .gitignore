@@ -9,5 +9,6 @@ build/
 # Ignore temp files from assorted programs
 *~
 
-# ingore compiled python files
+# ignore compiled python files
 *.pyc
+__pycache__/

@@ -1,6 +1,6 @@
 #from LocHandler import RobotState
 from __future__ import print_function, division
-from math import sqrt, atan, degrees, atan2, cos, sin
+from math import sqrt, atan, cos, sin
 import time
 import tf
 
@@ -18,6 +18,7 @@ def frange(start, end, step):
     yield end # final case
 
 def sign(val):
+    """Returns the sign of a number"""
     if val < 0:
         return -1
     elif val > 0:
@@ -25,6 +26,7 @@ def sign(val):
     return 0
 
 def clamp(val, min_, max_):
+    """Clamps a number between a given min and max"""
     if val < min_:
         return min_
     elif val > max_:
@@ -32,12 +34,18 @@ def clamp(val, min_, max_):
     return val
 
 class PurePursuit(object):
+    """
+    An implementation of a pure-pursuit controller that is pretty trashy but kinda works.
+    Simple is better than complex - Zen of Python
+    """
+
     def __init__(self, points, lookahead):
         self.lookahead = lookahead
         self.points = self.fillPoints(points)
         self.goal = (0, 0)
-    
+
     def fillPoints(self, points):
+        """Fills in points in between the given necessery points so we have smooth turns"""
         newPoints = []
         for index, point in enumerate(points): # for each point in the given list of points
             newPoints.append(point) # add that point to our new list
@@ -56,29 +64,31 @@ class PurePursuit(object):
         return newPoints
     
     def getNextHeading(self, state):
-        # really un-optimized. Best case is O(1) when we're at the end of the line, second best is O(lookahead / 0.2) when we're just starting,
-        # worse case is ~O(n / 0.2) when we're close to the end and have to search through all the points
-        # average is like O(n/2 / 0.2) when we're in the middle I guess. If I wanted to I could add like a lastGoalPoint and just start search
-        # a couple back from that to get like O(lookahead / 0.2) which is pretty good
+        """
+        Gets the next heading you need to be on based on location and farthest point still in lookahead
+        This is really un-optimized. Best case is O(1) when we're at the end of the line, second best is O(lookahead / 0.2) when we're just starting,
+        worse case is ~O(n / 0.2) when we're close to the end and have to search through all the points
+        average is like O(n/2 / 0.2) when we're in the middle I guess. If I wanted to I could add like a lastGoalPoint and just start search
+        a couple back from that to get like O(lookahead / 0.2) which is pretty good
+        """
         for index, point in enumerate(self.points): # for each of the points in our path
             if dist(state.x, state.y, *point) > self.lookahead: # if the point is too far
                 self.goal = self.points[index - 1] # then go back one, because we know the points are sorted because we put them there
             elif pointDist(point, self.points[-1]) < self.lookahead: # if we're seeing the end of the line
                 self.goal = self.points[-1]
-        
-        return #TODO make it return heading
 
+        return #TODO make it return heading
 
     def getGoalPoint(self):
         return self.goal
 
-class PIDController:
+class PIDController(object):
     """A very trashy PID Controller that is basically just WPILib's but python"""
     def __init__(self, kP, kI=0, kD=0, threshold=0.1, velocity_threshold=0.1):
         self.kP = kP
         self.kI = kI
         self.kD = kD
-        
+
         self.error = 0
         self.lastError = 0
         self.velocity_error = 0
@@ -92,7 +102,7 @@ class PIDController:
         self.lasttime = 0
         self.last_measurement = 0
         self.zero_divisions = 0
-    
+
     def calculate(self, measurement):
         """Gets the output of the PID based on the setpoint and the given measure of the system's state and stuff"""
         self.error = self.setpoint - measurement
@@ -112,11 +122,11 @@ class PIDController:
     def setSetpoint(self, setpoint):
         """Sets the setpoint of the PID controller"""
         self.setpoint = setpoint
-    
+
     def atSetpoint(self):
         """Gets if we've reached the setpoint (and, if using a kD term, if we've been there long enough kinda)"""
         return abs(self.error) < self.threshold and abs(self.velocity_error) < self.velocity_threshold
-    
+
     def setThreshold(self, threshold):
         """Sets the threshold for if we're at the setpoint or not"""
         self.threshold = threshold
@@ -150,9 +160,8 @@ def latLonToXY(lat, lon):
     +37 because sim considers (0, 0) to be center of field, but we have origin at robot pose"""
     return ((lon - -97.442325) * 91058.93, 37 + (lat - 35.205853) * 110944.33)
 
-
 # Copied directly from whatever worked in Robot.py
-#def getYaw(quat):
-#    """Gets the rotation around the Z axis (so, yaw/heading) from a quaternion. Copied from Ye Olde Robot.py"""
-#    explicit_quat = [quat.x, quat.y, quat.z, quat.w] # this is a workaround for types not playing nice
-#    return tf.transformations.euler_from_quaternion(explicit_quat)[2] # get a euler, yaw is second angle of it
+def getYaw(quat):
+    """Gets the rotation around the Z axis (so, yaw/heading) from a quaternion. Copied from Ye Olde Robot.py"""
+    explicit_quat = [quat.x, quat.y, quat.z, quat.w] # this is a workaround for types not playing nice
+    return tf.transformations.euler_from_quaternion(explicit_quat)[2] # get a euler, yaw is second angle of it
