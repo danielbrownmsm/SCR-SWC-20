@@ -46,7 +46,7 @@ class RobotState:
     """A class to hold the state of a robot including position, velocity, and
     acceleration, as well as their angular equivalents. How much you trust each
     of those values (for use in a weighted average) can be modified by passing
-    a dictionary in for trust_vals
+    a TrustVals object in for trust_vals
     """
     def __init__(self, x=0, y=0, velocity=0, acceleration=0, angle=0, angle_velocity=0, angle_acceleration=0, timestamp=0, prev_timestamp=0, trust_vals=DEFAULT_TRUST):
         self.x = x
@@ -84,6 +84,23 @@ class RobotState:
 
         return string
 
+
+def integrate():
+    # this is x += velocity * delta time
+    return
+
+def derivative():
+    # this is velocity = delta x / delta time
+    return
+
+# position += velocity * d_time
+# velocity = d_position / d_time
+# acceleration = d_velocity / d_time
+# velocity += acceleration * d_time
+# which means (?) position += acceleration * d_time * d_time ???
+# and (?) acceleration = d_position / d_time // d_time ?????? yeah I'm not too sure about this one
+# Obviously needing to cos() and sin() these but yeah
+# 
 
 class VelocityHandler:
     """A class to handle updating a state based on the /sim/velocity topic
@@ -324,6 +341,20 @@ class FusedState: #TODO wait why is this here this is just RobotState what the a
     # angle_vel <- IMU
     # angle_acceleration <- IMU
 
+    # so when propogating (as I'm now calling it)
+    # solve for x,y with GPS
+    # propogate all other values with that information
+    # solve for angle and acceleration and angle_acceleration and all that good jazz with IMU
+    # propogate all other values with that information
+    # solve for angle with control
+    # propogate
+    # solve for velocity with velocity and control
+    # propogate
+
+    # now have a second update function that goes back through and fixes things?
+    # wait, no. Predict where we will be based on dead-reckoning, then weighted average the sensors and the prediction or something
+    # IDK at this point
+
     def __init__(self):
         self.x = 0
         self.y = 0
@@ -489,4 +520,4 @@ if __name__ == "__main__":
 #   - IMU isn't doing right angle either, maybe it's returning RAD instead of DEG?
 #   - IMU seems to be whack with velocity, thinking rest is -2 and max is 4/-11, maybe not initialized right?
 #   - velocity works nice but is screwed over by IMU angle so pos is dead-wrong
-#   - control untested, but is also probably ABSOLUTE TRASH
+#   - control untested, but is also probably ABSOLUTE TRASH as well
