@@ -17,6 +17,20 @@ def frange(start, end, step):
     yield running_total # b/c it's added but not yielded because then while exits
     yield end # final case
 
+def sign(val):
+    if val < 0:
+        return -1
+    elif val > 0:
+        return 1
+    return 0
+
+def clamp(val, min_, max_):
+    if val < min_:
+        return min_
+    elif val > max_:
+        return max_
+    return val
+
 class PurePursuit(object):
     def __init__(self, points, lookahead):
         self.lookahead = lookahead
@@ -76,16 +90,23 @@ class PIDController:
 
         self.time = 0
         self.lasttime = 0
+        self.last_measurement = 0
+        self.zero_divisions = 0
     
     def calculate(self, measurement):
         """Gets the output of the PID based on the setpoint and the given measure of the system's state and stuff"""
-        self.error = measurement - self.setpoint
-        self.velocity_error = (self.error - self.lastError) / (time.time() - self.lasttime) #idk why it's called velocity that's what WPILib says but it makes sense
+        self.error = self.setpoint - measurement
+        try:
+            self.velocity_error = (self.error - self.lastError) / (time.time() - self.lasttime) #idk why it's called velocity that's what WPILib says but it makes sense
+        except ZeroDivisionError:
+            self.zero_divisions += 1
+            self.velocity_error = 0
         self.totalError += self.error
 
         output = self.error * self.kP + self.totalError * self.kI + self.velocity_error * self.kD
         self.lastError = self.error
-        self.lastTime = time.time()
+        self.last_measurement = measurement
+        self.lasttime = time.time()
         return output
 
     def setSetpoint(self, setpoint):
@@ -131,7 +152,7 @@ def latLonToXY(lat, lon):
 
 
 # Copied directly from whatever worked in Robot.py
-def getYaw(quat):
-    """Gets the rotation around the Z axis (so, yaw/heading) from a quaternion. Copied from Ye Olde Robot.py"""
-    explicit_quat = [quat.x, quat.y, quat.z, quat.w] # this is a workaround for types not playing nice
-    return tf.transformations.euler_from_quaternion(explicit_quat)[2] # get a euler, yaw is second angle of it
+#def getYaw(quat):
+#    """Gets the rotation around the Z axis (so, yaw/heading) from a quaternion. Copied from Ye Olde Robot.py"""
+#    explicit_quat = [quat.x, quat.y, quat.z, quat.w] # this is a workaround for types not playing nice
+#    return tf.transformations.euler_from_quaternion(explicit_quat)[2] # get a euler, yaw is second angle of it
