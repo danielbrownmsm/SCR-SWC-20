@@ -2,7 +2,7 @@
 
 from __future__ import print_function, division
 #import time
-from math import cos, sin, radians
+from math import cos, sin, radians, degrees
 
 import rospy
 from std_msgs.msg import Float32
@@ -61,9 +61,9 @@ class SensorHandler(object):
         A callback for the imu. Uses getYaw from Util.py to convert a quat to a euler.
         Updates angle, angle velocity, and acceleration (x axis or whatever points from the back to the front
         """
-        self.state.acceleration = data.acceleration.x #TODO prob right axis check
-        self.state.angle = getYaw(data.orientation)
-        self.state.angle_velocity = data.angle_velocity.z #TODO yeah that's probably not right way to get it check
+        self.state.acceleration = data.linear_acceleration.x #TODO prob right axis check
+        self.state.angle = degrees(getYaw(data.orientation))
+        self.state.angle_velocity = data.angular_velocity.z #TODO yeah that's probably not right way to get it check
 
     def controlCallback(self, data):
         """A callback for our control messages that we output from ControlNode. Basically dead-reckoning"""
@@ -118,6 +118,11 @@ def publish(event):
 
     publisher.publish(sensorHandler.getMessage())
 
+def printState(event):
+    global sensorHandler
+    print()
+    print(sensorHandler.getMessage())
+
 if __name__ == "__main__":
     try:
         # Initalize our node in ROS
@@ -135,6 +140,7 @@ if __name__ == "__main__":
 
         # Create a timer that calls timer_callback() with a period of 0.1, because most of our sensors update at 10 Hz
         rospy.Timer(rospy.Duration(0.1), publish)
+        rospy.Timer(rospy.Duration(1), printState)
 
         # Let ROS take control of this thread until a ROS wants to kill
         rospy.loginfo("Sensor node setup complete")

@@ -2,7 +2,6 @@
 from __future__ import print_function, division
 from math import sqrt, atan, degrees, atan2, cos, sin
 import time
-from colored import style
 import tf
 
 
@@ -115,7 +114,7 @@ class PIDController:
         return abs(self.error) < self.threshold and abs(self.velocity_error) < self.velocity_threshold
     
     def setThreshold(self, threshold):
-        """Setst the threshold for if we're at the setpoint or not"""
+        """Sets the threshold for if we're at the setpoint or not"""
         self.threshold = threshold
 
 # Good ol' distance formula
@@ -150,6 +149,3 @@ def getYaw(quat):
     """Gets the rotation around the Z axis (so, yaw/heading) from a quaternion. Copied from Ye Olde Robot.py"""
     explicit_quat = [quat.x, quat.y, quat.z, quat.w] # this is a workaround for types not playing nice
     return tf.transformations.euler_from_quaternion(explicit_quat)[2] # get a euler, yaw is second angle of it
-
-def log(node, color, string):
-    print(color + "[" + str(node) + "]" + str(string) + style.RESET)
