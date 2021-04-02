@@ -53,7 +53,7 @@ class SensorHandler(object):
     def gpsCallback(self, data):
         """A callback for the gps. Uses latLonToXY from Util.py and updates position (x,y)"""
         x, y = latLonToXY(data.latitude, data.longitude)
-        self.state.x = x
+        self.state.x = -x
         self.state.y = y
 
     def imuCallback(self, data):
@@ -120,8 +120,8 @@ def publish(event):
 
 def printState(event):
     global sensorHandler
-    print()
-    print(sensorHandler.getMessage())
+#    print()
+#    print(sensorHandler.getMessage())
     pass
 
 if __name__ == "__main__":
