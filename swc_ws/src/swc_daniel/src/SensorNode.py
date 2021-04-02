@@ -122,12 +122,13 @@ def printState(event):
     global sensorHandler
     print()
     print(sensorHandler.getMessage())
+    pass
 
 if __name__ == "__main__":
     try:
         # Initalize our node in ROS
         rospy.init_node("sensor_node")
-        rospy.loginfo("Sensor node initialized!")
+        rospy.logwarn("Sensor node initialized!")
 
         publisher = rospy.Publisher("/daniel/state", State, queue_size=1)
 
@@ -143,7 +144,7 @@ if __name__ == "__main__":
         rospy.Timer(rospy.Duration(1), printState)
 
         # Let ROS take control of this thread until a ROS wants to kill
-        rospy.loginfo("Sensor node setup complete")
+        rospy.logwarn("Sensor node setup complete")
         rospy.spin()
     except rospy.ROSInterruptException:
         pass
