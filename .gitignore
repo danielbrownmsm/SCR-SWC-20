@@ -12,3 +12,4 @@ build/
 # ignore compiled python files
 *.pyc
 __pycache__/
+*pycache*/

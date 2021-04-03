@@ -33,6 +33,30 @@ def clamp(val, min_, max_):
         return max_
     return val
 
+class MedianFilter:
+    def __init__(self, size=5):
+        self.size = size
+        self.readings = [0] * self.size
+
+    def update(self, new_val):
+        self.readings.pop(0)
+        self.readings.append(new_val)
+
+    def get(self):
+        return sorted(self.readings)[self.size//2 + 1]
+
+class MovingAverage:
+    def __init__(self, size=5):
+        self.size = size
+        self.readings = [0] * self.size
+
+    def update(self, new_val):
+        self.readings.pop(0)
+        self.readings.append(new_val)
+
+    def get(self):
+        return sum(self.readings) / len(self.readings)
+
 class PurePursuit(object):
     """
     An implementation of a pure-pursuit controller that is pretty trashy but kinda works.

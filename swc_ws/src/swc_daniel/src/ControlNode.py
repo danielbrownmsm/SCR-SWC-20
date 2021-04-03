@@ -12,7 +12,7 @@ from swc_msgs.srv import Waypoints
 class ControlHandler(object):
     """A class to handle controlling our robot"""
     def __init__(self, points):
-        self.distancePID = PIDController(3, 0.001, 0.001) #TODO tune
+        self.distancePID = PIDController(5, 0, 0.06) #TODO tune
         self.distancePID.setSetpoint(0)
         self.distancePID.threshold = 2
         self.distancePID.velocityThreshold = 4
@@ -57,7 +57,7 @@ class ControlHandler(object):
             #with open("errors.txt", "w") as f:
             #    f.write("yeah this exists")
             #    pickle.dump(self.distance_errors, f)
-            print(self.distance_errors)
+            #print(self.distance_errors)
             print("dumped!")
             self.hasDumped = True
         self.goal = self.points[self.targetIndex]
