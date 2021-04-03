@@ -33,7 +33,7 @@ class ControlHandler(object):
         self.state = data
 
     def getMessage(self):
-        if self.state == None: # if we haven't started getting states of something weird happens
+        if self.state == None: # if we haven't started getting states or something weird happens
             msg = Control()
             msg.speed = 0
             msg.turn_angle = 0
@@ -44,13 +44,15 @@ class ControlHandler(object):
             self.targetIndex += 1
             rospy.logwarn("Going for next waypoint")
         self.goal = self.points[self.targetIndex]
+        #self.distancePID.setSetpoint(dist(self.points[self.targetIndex-1], self.points[self.targetIndex-1], *self.goal))
+        #print(self.goal)
         self.target_angle = -degrees(atan((self.state.x - self.goal[0])  / (self.state.y - self.goal[1])))
 
         msg = Control()
         msg.speed = self.distancePID.calculate(-dist(self.state.x, self.state.y, *self.goal))
         msg.turn_angle = clamp(self.anglePID.calculate(self.target_angle - self.state.angle), -10, 10)
 
-        if self.state.x > self.goal[0] + 0.5: # if we're past it (for sure)
+        if self.state.y > self.goal[1] + 0.5: # if we're past it (for sure)
             msg.speed *= -1 # then go backwards
             msg.turn_angle *= -1 # which means turns are inverted
 
