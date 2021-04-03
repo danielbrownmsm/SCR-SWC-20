@@ -12,10 +12,10 @@ from swc_msgs.srv import Waypoints
 class ControlHandler(object):
     """A class to handle controlling our robot"""
     def __init__(self, points):
-        self.distancePID = PIDController(5, 0, 0.06) #TODO tune
+        self.distancePID = PIDController(5, 0, 0.2) #TODO tune
         self.distancePID.setSetpoint(0)
         self.distancePID.threshold = 2
-        self.distancePID.velocityThreshold = 4
+        self.distancePID.velocityThreshold = 6
         self.distance_errors = {
             0:[],
             1:[],
@@ -52,18 +52,8 @@ class ControlHandler(object):
         if self.distancePID.atSetpoint() and self.hasRun:
             self.targetIndex += 1
             rospy.logwarn("Going for next waypoint")
-        if self.targetIndex == 2 and not self.hasDumped:
-            print("dumping...")
-            #with open("errors.txt", "w") as f:
-            #    f.write("yeah this exists")
-            #    pickle.dump(self.distance_errors, f)
-            #print(self.distance_errors)
-            print("dumped!")
-            self.hasDumped = True
+        
         self.goal = self.points[self.targetIndex]
-        self.distance_errors[self.targetIndex].append(dist(self.state.x, self.state.y, *self.goal))
-        #self.distancePID.setSetpoint(dist(self.points[self.targetIndex-1], self.points[self.targetIndex-1], *self.goal))
-        #print(self.goal)
         self.target_angle = -degrees(atan((self.state.x - self.goal[0])  / (self.state.y - self.goal[1])))
 
         msg = Control()

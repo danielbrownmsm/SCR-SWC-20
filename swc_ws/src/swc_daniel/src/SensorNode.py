@@ -78,6 +78,8 @@ class SensorHandler(object):
         self.predicted_state.angle = angle
         #self.predicted_state.angle_velocity
         #self.predicted_state.angle_acceleration
+        #print(self.predicted_state.x, self.predicted_state.y, sep=", ")
+        #print(self.predicted_state.angle)
 
     def velocityCallback(self, data):
         """A callback for the velocity publisher because it has sweet, sweet 0.1 standard deviation"""
@@ -92,11 +94,27 @@ class SensorHandler(object):
         # stranger reading this comment for some reason why are _you_ here? A duck walked up to a lemonade stand and somebody
         # once told me the world was gonna roll me I took the midnight train going anywhere oh mama mia mama mia let me go
         # if it hadn't been for cotton-eyed joe, cha cha real smooth go to work "to the left" * 4
-        pass
+        if abs(self.predicted_state.x - self.state.x) < 0.2: # we know stdv for speed output is .1
+            pass
+        else: # otherwise, don't trust it
+            self.state.x = self.predicted_state.x
+        
+        if abs(self.predicted_state.y - self.state.y) < 0.2: # we know stdv for speed output is .1
+            pass
+        else: # otherwise, don't trust it
+            self.state.y = self.predicted_state.y
+        
+        if abs(self.predicted_state.angle - self.state.angle) < 0.8: # we know stdv for angle output is .4
+            pass
+        else: # otherwise, don't trust it
+            self.state.angle = self.predicted_state.angle
+        
 
     def getMessage(self):
         """Gets a State message for publishing"""
-        self.propogate() # maek sho we usin the finest stuf
+        #self.propogate() # maek sho we usin the finest stuf
+        # actually not what I had in mind when I said I would write this function but I don't feel like changing names or putting
+        # more effort into this right now. Obstacles have a higher priority, and really this stuff doesn't matter once using a camera
 
         msg = State()
         msg.x = self.state.x
