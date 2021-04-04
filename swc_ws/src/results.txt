@@ -1,10 +1,10 @@
 Team DarkThemeRevised
-Date: 2021-04-04 08:45:33 -05
-Seed: 912055
+Date: 2021-04-04 11:17:10 -05
+Seed: 255876
 
-Time: 15.940
+Time: 19.660
 Multiplier: x7.680
-Score: 122.419
+Score: 150.989
 
 -- Multipliers --
 Obstacles Bonus: x15.00
