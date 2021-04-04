@@ -1,6 +1,6 @@
 import random, os
 
-# hard seed: 636929
+# hard seed: 636929,5740,329224, ~862173
 
 class Robot(object):
     def __init__(self, kP, kD, threshold, velocityThreshold):
@@ -51,7 +51,7 @@ class Robot(object):
 
 # returns a value increased or decreased by a random percent
 def randomChange(val):
-    return val + (val * random.randint(-1, 1) * round(random.random(), 2))
+    return val + (val * random.randint(-1, 1) * random.random())
 
 POP_SIZE = 10
 MAX_GENERATIONS = 100
@@ -59,9 +59,9 @@ MAX_GENERATIONS = 100
 robots = []
 for i in range(POP_SIZE): # initialize the starting pool
     kP = randomChange(3)
-    kD = randomChange(0.6)
+    kD = randomChange(1)
     threshold = randomChange(2)
-    velocityThreshold = randomChange(6)
+    velocityThreshold = randomChange(4)
     robots.append(Robot(kP, kD, threshold, velocityThreshold))
 
 breed_pool = []
@@ -91,7 +91,7 @@ for generation in range(MAX_GENERATIONS): # 50 generations
             string = ", ".join([str(generation), str(robot.kP), str(robot.kD), str(robot.threshold), str(robot.velocityThreshold), str(robot.fitness)])
             f.write(string + "\n")
         
-        for chance in range(int(round(1 / robot.fitness, 3)  *  1000)): # add it to the breed pool proportional to it's score
+        for chance in range(int(1 / robot.fitness  *  10000)): # add it to the breed pool proportional to it's score
             breed_pool.append(robot)
     
     for new_bot in range(POP_SIZE): # ten robots / gen ???

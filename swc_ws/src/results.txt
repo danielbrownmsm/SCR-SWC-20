@@ -1,14 +1,13 @@
 Team DarkThemeRevised
-Date: 2021-04-04 11:17:10 -05
-Seed: 255876
+Date: 2021-04-04 16:52:09 -05
+Seed: 529245
 
-Time: 19.660
-Multiplier: x7.680
-Score: 150.989
+Time: 24.960
+Multiplier: x9.600
+Score: 239.616
 
 -- Multipliers --
 Obstacles Bonus: x15.00
 Noise Bonus: x1.00
 Waypoint 1 reached: x0.80
 Waypoint 2 reached: x0.80
-Waypoint 3 reached: x0.80

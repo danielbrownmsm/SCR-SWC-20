@@ -9,7 +9,7 @@ if __name__ == "__main__":
         # Initalize our node in ROS
         rospy.init_node("timer_node")
         rospy.logwarn("Timer node initialized!")
-        time.sleep(60)
+        time.sleep(35)
         raise SystemExit
         
     except rospy.ROSInterruptException:
