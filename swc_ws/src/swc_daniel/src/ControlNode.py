@@ -12,10 +12,14 @@ from swc_msgs.srv import Waypoints
 class ControlHandler(object):
     """A class to handle controlling our robot"""
     def __init__(self, points):
-        self.distancePID = PIDController(5, 0, 0.2) #TODO tune
+        with open("~/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/vals.txt", "r") as f:
+            vals = f.readlines()
+            for val in vals:
+                val = float(val.strip())
+        self.distancePID = PIDController(val[0], 0, val[1])
         self.distancePID.setSetpoint(0)
-        self.distancePID.threshold = 2
-        self.distancePID.velocityThreshold = 6
+        self.distancePID.threshold = val[2]
+        self.distancePID.velocityThreshold = val[3]
         self.distance_errors = {
             0:[],
             1:[],
@@ -24,7 +28,7 @@ class ControlHandler(object):
             4:[]
         }
 
-        self.anglePID = PIDController(0.05, 0, 0.001) #TODO tune
+        self.anglePID = PIDController(0.05, 0, 0.001) #TODO actually this is pretty good, surprisingly
         self.anglePID.setSetpoint(0)
         
         # skip the first because it's just the starting pos
