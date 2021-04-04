@@ -27,7 +27,7 @@ class RobotState(object):
         self.angle_velocity = 0
         self.angle_acceleration = 0
 
-        self.timestamp = 0
+        #self.timestamp = 0
     
     def __str__(self):
         #TODO write __str__

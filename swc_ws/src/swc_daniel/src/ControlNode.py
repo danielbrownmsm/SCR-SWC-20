@@ -2,7 +2,6 @@
 
 from __future__ import print_function, division
 from math import degrees, atan
-import pickle
 
 import rospy
 from Util import PIDController, dist, latLonToXY, clamp
@@ -12,14 +11,15 @@ from swc_msgs.srv import Waypoints
 class ControlHandler(object):
     """A class to handle controlling our robot"""
     def __init__(self, points):
-        with open("~/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/vals.txt", "r") as f:
+        with open("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/vals.txt", "r") as f:
             vals = f.readlines()
-            for val in vals:
-                val = float(val.strip())
-        self.distancePID = PIDController(val[0], 0, val[1])
+            for index, val in enumerate(vals):
+                vals[index] = float(val.strip())
+        rospy.logwarn(vals)
+        self.distancePID = PIDController(vals[0], 0, vals[1])
         self.distancePID.setSetpoint(0)
-        self.distancePID.threshold = val[2]
-        self.distancePID.velocityThreshold = val[3]
+        self.distancePID.threshold = vals[2]
+        self.distancePID.velocityThreshold = vals[3]
         self.distance_errors = {
             0:[],
             1:[],
@@ -51,9 +51,9 @@ class ControlHandler(object):
             msg.speed = 0
             msg.turn_angle = 0
             return msg # DO NOTHING. GO NOWHERE. STAY STILL. DON'T MOVE.
-
+        
         """Gets the actual control message"""
-        if self.distancePID.atSetpoint() and self.hasRun:
+        if self.distancePID.atSetpoint() and self.hasRun and self.targetIndex < 3:
             self.targetIndex += 1
             rospy.logwarn("Going for next waypoint")
         
