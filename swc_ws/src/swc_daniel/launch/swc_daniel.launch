@@ -4,8 +4,7 @@
 
     <!-- Robot control nodes (Python2) -->
     <node pkg="swc_daniel" type="ControlNode.py" name="control_node" output="screen" required="true" />
-    <!-- <node pkg="swc_daniel" type="FusionNode.py" name="fusion_node" output="screen" required="true" /> -->
     <node pkg="swc_daniel" type="SensorNode.py" name="sensor_node" output="screen" required="true" />
-    <node pkg="swc_daniel" type="TimerNode.py" name="timer_node" output="screen" required="true" />
-    <!-- <node pkg="swc_daniel" type="obstacle_node.py" name="obstacle_node" output="screen" required="true" /> -->
+    <node pkg="swc_daniel" type="VisionNode.py" name="vision_node" output="screen" required="true" />
+    <!-- <node pkg="swc_daniel" type="TimerNode.py" name="timer_node" output="screen" required="true" /> -->
 </launch>

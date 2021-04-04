@@ -11,64 +11,61 @@ from swc_msgs.srv import Waypoints
 class ControlHandler(object):
     """A class to handle controlling our robot"""
     def __init__(self, points):
+        # read our GA tunable parameters
         with open("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20/swc_ws/src/swc_daniel/src/vals.txt", "r") as f:
             vals = f.readlines()
             for index, val in enumerate(vals):
                 vals[index] = float(val.strip())
-        rospy.logwarn(vals)
+
+        # init PIDS        
         self.distancePID = PIDController(vals[0], 0, vals[1])
         self.distancePID.setSetpoint(0)
         self.distancePID.threshold = vals[2]
         self.distancePID.velocityThreshold = vals[3]
-        self.distance_errors = {
-            0:[],
-            1:[],
-            2:[],
-            3:[],
-            4:[]
-        }
-
-        self.anglePID = PIDController(0.05, 0, 0.001) #TODO actually this is pretty good, surprisingly
+        
+        self.anglePID = PIDController(0.05, 0, 0.001)
         self.anglePID.setSetpoint(0)
         
         # skip the first because it's just the starting pos
         self.points = [latLonToXY(point.latitude, point.longitude) for point in points[1:]]
         self.points = [(-point[0], point[1]) for point in self.points]
-        self.state = None
-        self.targetIndex = 0
         self.goal = self.points[0]
+        self.targetIndex = 0
+        
+        self.state = None
         self.target_angle = 0
         self.hasRun = False
-        self.hasDumped = False
-
+        
     def stateCallback(self, data):
         """A callback for data published to /daniel/state about the robot's state"""
         self.state = data
 
     def getMessage(self):
+        """Gets the actual control message"""
         if self.state == None: # if we haven't started getting states or something weird happens
             msg = Control()
             msg.speed = 0
             msg.turn_angle = 0
             return msg # DO NOTHING. GO NOWHERE. STAY STILL. DON'T MOVE.
         
-        """Gets the actual control message"""
+        # if we've driven far enough
         if self.distancePID.atSetpoint() and self.hasRun and self.targetIndex < 3:
-            self.targetIndex += 1
+            self.targetIndex += 1 # go for next waypoint
             rospy.logwarn("Going for next waypoint")
-        
-        self.goal = self.points[self.targetIndex]
-        self.target_angle = -degrees(atan((self.state.x - self.goal[0])  / (self.state.y - self.goal[1])))
+
+        self.goal = self.points[self.targetIndex] # assign goal
+        self.target_angle = -degrees(atan((self.state.x - self.goal[0])  / (self.state.y - self.goal[1]))) # get target
 
         msg = Control()
-        msg.speed = self.distancePID.calculate(-dist(self.state.x, self.state.y, *self.goal))
-        msg.turn_angle = clamp(self.anglePID.calculate(self.target_angle - self.state.angle), -10, 10)
+        msg.speed = self.distancePID.calculate(-dist(self.state.x, self.state.y, *self.goal)) # -dist because we are driving it to 0
+        # which means if dist were positive this would output a negative, driving us backwards and increasing error
+        msg.turn_angle = clamp(self.anglePID.calculate(self.target_angle - self.state.angle), -10, 10) # clamp output
 
         if self.state.y > self.goal[1] + 0.5: # if we're past it (for sure)
             msg.speed *= -1 # then go backwards
             msg.turn_angle *= -1 # which means turns are inverted
 
-        self.hasRun = True
+        self.hasRun = True # so we don't prematurely go for another waypoint
         return msg
 
 def publish(event):
@@ -107,7 +104,4 @@ if __name__ == "__main__":
         rospy.spin()
 
     except rospy.ROSInterruptException:
-        rospy.logwarn("interrupted!")
-        print("I SAID INTERRUPTED!!!")
         pass
-

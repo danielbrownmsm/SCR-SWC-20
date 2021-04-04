@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
 from __future__ import print_function, division
-#import time
 from math import cos, sin, radians, degrees
 
 import rospy
 from std_msgs.msg import Float32
 from sensor_msgs.msg import Imu
 from swc_msgs.msg import State, Gps, Control
-from Util import latLonToXY, getYaw#, dist
+from Util import latLonToXY, getYaw
 
 class RobotState(object):
     """
@@ -94,6 +93,8 @@ class SensorHandler(object):
         # stranger reading this comment for some reason why are _you_ here? A duck walked up to a lemonade stand and somebody
         # once told me the world was gonna roll me I took the midnight train going anywhere oh mama mia mama mia let me go
         # if it hadn't been for cotton-eyed joe, cha cha real smooth go to work "to the left" * 4
+
+        #UPDATE: THIS IS CRAP
         if abs(self.predicted_state.x - self.state.x) < 0.2: # we know stdv for speed output is .1
             pass
         else: # otherwise, don't trust it
