@@ -2,8 +2,11 @@
 
 from __future__ import print_function, division
 
-import rospy
+import rospy, time, os
 from sensor_msgs.msg import CompressedImage
+
+import numpy as np
+import cv2
 
 class VisionHandler(object):
     def __init__(self):
@@ -13,7 +16,35 @@ class VisionHandler(object):
 
     def visionCallback(self, data):
         if not self.hasRun:
-            print(data)
+            #print(data)
+            arr = np.fromstring(data.data, np.uint8)
+            img_np = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+            #print(img_np)
+            hsv_ = cv2.cvtColor(img_np, cv2.COLOR_BGR2HSV)
+            hsv = cv2.blur(hsv_, (5, 5))
+            #print(hsv)
+            
+            lower = np.array([20, 100, 100])
+            upper = np.array([40, 225, 225])
+            print("We made it this far")
+
+            mask = cv2.inRange(hsv, lower, upper)
+            #print(mask)
+            contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # ???
+            #print(contours)
+            contours = contours[0] if len(contours) == 2 else contours[1]
+
+            for contour in contours:
+                x, y, width, height = cv2.boundingRect(contour)
+                cv2.rectangle(img_np, (x, y), (x + width, y + height), (0, 0, 255), 1)
+                #print(x, y, width, height)
+                #print()
+            print(len(contours))
+
+            os.chdir("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20")
+            cv2.imwrite("image.png", img_np)
+            print("image wrote")
+            
             self.hasRun = True
             raise SystemExit
 
@@ -40,6 +71,7 @@ if __name__ == "__main__":
         visionHandler = VisionHandler()
 
         # subscribe to our state topic
+        time.sleep(8)
         rospy.Subscriber("/sim/image/compressed", CompressedImage, visionHandler.visionCallback)
 
         #rospy.Timer(rospy.Duration(0.1), publish)
