@@ -37,8 +37,7 @@ class VisionHandler(object):
 
             contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # ???
             contours = contours[0] if len(contours) == 2 else contours[1]
-            img_np = cv2.drawContours(img_np, contours, -1, (255, 0, 255), 4)
-            
+
             largest = {
                 "width":0,
                 "height":0,
@@ -47,6 +46,7 @@ class VisionHandler(object):
             }
 
             if not FAST:
+                img_np = cv2.drawContours(img_np, contours, -1, (255, 0, 255), 4)
                 for contour in contours:
                     color = (255, 0, 0)
                     x, y, width, height = cv2.boundingRect(contour)
@@ -76,7 +76,7 @@ class VisionHandler(object):
                         largest["x"] = x
                         largest["y"] = y
 
-            if largest["x"] != 0 and largest["width"] > 10:
+            if largest["x"] != 0 and largest["width"] > 5:
                 self.x_offset = largest["x"] - 300 + largest["width"] / 2
                 self.distance = largest["height"]
                 self.detected = True

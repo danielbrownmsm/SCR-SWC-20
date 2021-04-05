@@ -26,7 +26,7 @@ class ControlHandler(object):
         self.anglePID = PIDController(0.05, 0, 0.001)
         self.anglePID.setSetpoint(0)
 
-        self.angleVisionPID = PIDController(0.05, 0, 0.01)
+        self.angleVisionPID = PIDController(0.03, 0, 0.0)
         self.angleVisionPID.threshold = 10
         self.angleVisionPID.velocityThreshold = 50
         self.angleVisionPID.setSetpoint(0)
@@ -41,47 +41,42 @@ class ControlHandler(object):
         self.vision_data = None
         self.angleOutput = 0
         self.target_angle = 0
-        self.hasRun = False
-        self.hasGotVisionData = False
+        self.canStart = 0
         
     def stateCallback(self, data):
         """A callback for data published to /daniel/state about the robot's state"""
         self.state = data
+        self.canStart |= 0b00000001
     
     def visionCallback(self, data):
         self.vision_data = data
-        self.hasGotVisionData = True
+        self.canStart |= 0b00000010
 
     def getMessage(self):
         """Gets the actual control message"""
-        if self.state == None: # if we haven't started getting states or something weird happens
-            msg = Control()
-            msg.speed = 0
-            msg.turn_angle = 0
-            return msg # DO NOTHING. GO NOWHERE. STAY STILL. DON'T MOVE.
-        
         # if we've driven far enough
-        if self.distancePID.atSetpoint() and self.hasRun and self.targetIndex < 3:
+        if self.distancePID.atSetpoint() and self.canStart == 0b00000111: # if we've sent a message already
             self.targetIndex += 1 # go for next waypoint
             rospy.logwarn("Going for next waypoint")
 
         self.goal = self.points[self.targetIndex] # assign goal
         self.target_angle = -degrees(atan((self.state.x - self.goal[0])  / (self.state.y - self.goal[1]))) # get target
         self.angleOutput = clamp(self.anglePID.calculate(self.target_angle - self.state.angle), -10, 10) # clamp output
-        if self.hasGotVisionData and self.vision_data.detected:
-            self.angleOutput = clamp(self.angleVisionPID.calculate(-self.vision_data.x_offset), -10, 10)
-            print(self.vision_data.x_offset)
+        if self.vision_data.detected: # if there are any targets
+            self.angleOutput = clamp(self.angleVisionPID.calculate(-self.vision_data.x_offset / 2), -10, 10) # use vision instead
+            #print(self.vision_data.x_offset)
         
         msg = Control()
         msg.speed = self.distancePID.calculate(-dist(self.state.x, self.state.y, *self.goal)) # -dist because we are driving it to 0
         # which means if dist were positive this would output a negative, driving us backwards and increasing error
+
+        if self.state.y > self.goal[1] + 0.5: # if we're past it (for sure)
+            msg.speed *= -1 # then go backwards
+            self.angleOutput = clamp(self.anglePID.calculate(self.target_angle - self.state.angle), -10, 10) # switch to angle
+            msg.turn_angle *= -1 # which means turns are inverted
+
         msg.turn_angle = self.angleOutput
-
-        #if self.state.y > self.goal[1] + 0.5: # if we're past it (for sure)
-        #    msg.speed *= -1 # then go backwards
-        #    msg.turn_angle *= -1 # which means turns are inverted
-
-        self.hasRun = True # so we don't prematurely go for another waypoint
+        self.canStart |= 0b00000100
         return msg
 
 def publish(event):
@@ -89,7 +84,10 @@ def publish(event):
     global publisher
     global controlHandler
 
-    publisher.publish(controlHandler.getMessage())
+    if controlHandler.canStart >= 0b00000011:
+        publisher.publish(controlHandler.getMessage())
+    else:
+        return
 
 if __name__ == "__main__":
     try:
