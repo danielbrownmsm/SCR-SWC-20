@@ -4,7 +4,7 @@ from __future__ import print_function, division
 from math import degrees, atan
 
 import rospy
-from Util import PIDController, dist, latLonToXY, clamp
+from Util import PIDController, dist, latLonToXY, clamp, PurePursuit
 from swc_msgs.msg import State, Control, Vision
 from swc_msgs.srv import Waypoints
 
@@ -32,22 +32,23 @@ class ControlHandler(object):
         self.angleVisionPID.setSetpoint(0)
         
         # skip the first because it's just the starting pos
-        self.points = [latLonToXY(point.latitude, point.longitude) for point in points[1:]]
+        self.points = [latLonToXY(point.latitude, point.longitude) for point in points[:]]
         self.points = [(-point[0], point[1]) for point in self.points]
         self.goal = self.points[0]
         self.targetIndex = 0
+        self.controller = PurePursuit(self.points, 1) # lookahead of 1
         
         self.state = None
         self.vision_data = None
         self.angleOutput = 0
         self.target_angle = 0
         self.canStart = 0
-        
+
     def stateCallback(self, data):
         """A callback for data published to /daniel/state about the robot's state"""
         self.state = data
         self.canStart |= 0b00000001
-    
+
     def visionCallback(self, data):
         self.vision_data = data
         self.canStart |= 0b00000010
@@ -55,25 +56,28 @@ class ControlHandler(object):
     def getMessage(self):
         """Gets the actual control message"""
         # if we've driven far enough
-        if self.distancePID.atSetpoint() and self.canStart == 0b00000111: # if we've sent a message already
-            self.targetIndex += 1 # go for next waypoint
-            rospy.logwarn("Going for next waypoint")
+        #if self.distancePID.atSetpoint() and self.canStart == 0b00000111: # if we've sent a message already
+        #    self.targetIndex += 1 # go for next waypoint
+        #    rospy.logwarn("Going for next waypoint")
 
-        self.goal = self.points[self.targetIndex] # assign goal
-        self.target_angle = -degrees(atan((self.state.x - self.goal[0])  / (self.state.y - self.goal[1]))) # get target
-        self.angleOutput = clamp(self.anglePID.calculate(self.target_angle - self.state.angle), -10, 10) # clamp output
-        if self.vision_data.detected: # if there are any targets
-            self.angleOutput = clamp(self.angleVisionPID.calculate(-self.vision_data.x_offset / 2), -10, 10) # use vision instead
-            #print(self.vision_data.x_offset)
+        #self.goal = self.points[self.targetIndex] # assign goal
+        #self.target_angle = -degrees(atan((self.state.x - self.goal[0])  / (self.state.y - self.goal[1]))) # get target
+        #self.angleOutput = clamp(self.anglePID.calculate(self.target_angle - self.state.angle), -10, 10) # clamp output
+        #if self.vision_data.detected: # if there are any targets
+        #    self.angleOutput = clamp(self.angleVisionPID.calculate(-self.vision_data.x_offset / 2), -10, 10) # use vision instead
+        #    print(self.vision_data.x_offset)
         
         msg = Control()
-        msg.speed = self.distancePID.calculate(-dist(self.state.x, self.state.y, *self.goal)) # -dist because we are driving it to 0
+        self.anglePID.setSetpoint(self.controller.getNextHeading(self.state))
+        msg.turn_angle = self.anglePID.calculate(self.state.angle)
+        msg.speed = 8 - msg.turn_angle / 10
+        #msg.speed = self.distancePID.calculate(-dist(self.state.x, self.state.y, *self.goal)) # -dist because we are driving it to 0
         # which means if dist were positive this would output a negative, driving us backwards and increasing error
 
-        if self.state.y > self.goal[1] + 0.5: # if we're past it (for sure)
-            msg.speed *= -1 # then go backwards
-            self.angleOutput = clamp(self.anglePID.calculate(self.target_angle - self.state.angle), -10, 10) # switch to angle
-            msg.turn_angle *= -1 # which means turns are inverted
+        #if self.state.y > self.goal[1] + 0.5: # if we're past it (for sure)
+        #    msg.speed *= -1 # then go backwards
+        #    self.angleOutput = clamp(self.anglePID.calculate(self.target_angle - self.state.angle), -10, 10) # switch to angle
+        #    msg.turn_angle *= -1 # which means turns are inverted
 
         msg.turn_angle = self.angleOutput
         self.canStart |= 0b00000100

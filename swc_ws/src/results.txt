@@ -87,3 +87,18 @@ Noise Bonus: x1.00
 Waypoint 1 reached: x0.80
 Waypoint 2 reached: x0.80
 Waypoint 3 reached: x0.80
+======================
+Team DarkThemeRevised
+Date: 2021-04-05 15:41:23 -05
+Seed: 1060983180
+
+Time: 28.100
+Multiplier: x4.608
+Score: 129.485
+
+-- Multipliers --
+Obstacles Bonus: x15.00
+Noise Bonus: x0.60
+Waypoint 1 reached: x0.80
+Waypoint 2 reached: x0.80
+Waypoint 3 reached: x0.80

@@ -1,6 +1,6 @@
 #from LocHandler import RobotState
 from __future__ import print_function, division
-from math import sqrt, atan, cos, sin
+from math import sqrt, atan, cos, sin, degrees
 import time
 import tf
 
@@ -61,6 +61,7 @@ class PurePursuit(object):
     """
     An implementation of a pure-pursuit controller that is pretty trashy but kinda works.
     Simple is better than complex - Zen of Python
+    Working is better than simple - me, sitting here, crying, as it is not working
     """
 
     def __init__(self, points, lookahead):
@@ -85,6 +86,7 @@ class PurePursuit(object):
                 y = sin(angle) * length  +  point[1] # there's probably a better way to do this but whatever
                 newPoints.append((x, y)) # add it to the list
 
+        print(newPoints)
         return newPoints
     
     def getNextHeading(self, state):
@@ -101,7 +103,7 @@ class PurePursuit(object):
             elif pointDist(point, self.points[-1]) < self.lookahead: # if we're seeing the end of the line
                 self.goal = self.points[-1]
 
-        return #TODO make it return heading
+        return degrees(atan((state.x - self.goal[0]) / (state.y - self.goal[1]))) #TODO make it return heading
 
     def getGoalPoint(self):
         return self.goal
