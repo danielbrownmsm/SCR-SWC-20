@@ -2,12 +2,17 @@
 
 from __future__ import print_function, division
 
-import rospy, os
+import rospy, os, time
 from sensor_msgs.msg import CompressedImage
 from swc_msgs.msg import Vision
 
 import numpy as np
 import cv2
+
+LOWER = np.array([5, 80, 80]) # 10-20 gets the medium-dark stuff
+UPPER = np.array([40, 255, 255]) # 20-30 seems even better at that
+KERNEL = np.ones((2, 2), np.uint8)
+FAST = True
 
 class VisionHandler(object):
     def __init__(self):
@@ -22,47 +27,54 @@ class VisionHandler(object):
         self.ticks += 1
 
         if self.ticks % 10 == 0:
+            start = time.time()
             arr = np.fromstring(data.data, np.uint8)
             img_np = cv2.imdecode(arr, cv2.IMREAD_COLOR)
             hsv = cv2.cvtColor(img_np, cv2.COLOR_BGR2HSV)
-            
-            lower = np.array([5, 80, 80]) # 10-20 gets the medium-dark stuff
-            upper = np.array([35, 225, 225]) # 20-30 seems even better at that
-            
-            mask = cv2.inRange(hsv, lower, upper)
-            
-            #kernel = np.ones((5, 5), np.uint8)
-            #mask = cv2.dilate(mask, kernel, iterations=1)
-            #mask = cv2.erode(mask, kernel, iterations=1)
-            
+
+            mask = cv2.inRange(hsv, LOWER, UPPER)
+            mask = cv2.erode(mask, KERNEL, iterations=1)
+
             contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # ???
             contours = contours[0] if len(contours) == 2 else contours[1]
-            #mask = cv2.drawContours(hsv, contours, -1, (255, 0, 255), 4)
-
+            img_np = cv2.drawContours(img_np, contours, -1, (255, 0, 255), 4)
+            
             largest = {
                 "width":0,
                 "height":0,
                 "x":0,
                 "y":0
             }
-            for contour in contours:
-                x, y, width, height = cv2.boundingRect(contour)
-                if width > height * 2.5: # filter out really wide short ones
-                    continue
-                elif width <= 7 or height <= 7: # filter out small ones
-                    continue
-                elif y < 80: # reject low ones (ie the ground)
-                    continue
-                #elif cv2.contourArea(contour) < width * height * 1/4: # triangles have ~1/2 area of their bounding rect
-                #    continue # so we filter out skinny vertical strands or other edges
-                
-                if width * height > largest["width"] * largest["height"]:
-                    largest["width"] = width
-                    largest["height"] = height
-                    largest["x"] = x
-                    largest["y"] = y
 
-                #cv2.rectangle(img_np, (x, y), (x + width, y + height), (255, 0, 0), 1)
+            if not FAST:
+                for contour in contours:
+                    color = (255, 0, 0)
+                    x, y, width, height = cv2.boundingRect(contour)
+                    if 0.3 < width / height > 4: # filter out ones with weird aspect ratios
+                        color = (100, 0, 255)
+                    elif width <= 7 or height <= 7: # filter out small ones
+                        color = (255, 255, 0)
+                        continue
+                    elif y > 250: # reject low ones (ie the ground)
+                        color = (0, 0, 255)
+                    #elif cv2.contourArea(contour) * 4 < width * height: # triangles have ~1/2 area of their bounding rect
+                    #    color = (0, 0, 0)
+                    #cv2.rectangle(img_np, (x, y), (x + width, y + height), color, 2)
+            else:
+                for contour in contours:
+                    x, y, width, height = cv2.boundingRect(contour)
+                    if width <= 7 or height <= 7: # filter out small ones
+                        continue
+                    elif 0.3 < width / height > 4: # filter out ones with weird aspect ratios
+                        continue
+                    elif y > 250: # reject low ones (ie the ground)
+                        continue
+
+                    if width * height > largest["width"] * largest["height"]:
+                        largest["width"] = width
+                        largest["height"] = height
+                        largest["x"] = x
+                        largest["y"] = y
 
             if largest["x"] != 0 and largest["width"] > 10:
                 self.x_offset = largest["x"] - 300 + largest["width"] / 2
@@ -73,6 +85,8 @@ class VisionHandler(object):
             #os.chdir("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20")
             #cv2.imwrite("image.png", img_np)
             #print("image wrote")
+            
+            #print(time.time() - start)
 
     def getMessage(self):
         msg = Vision()

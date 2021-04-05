@@ -38,10 +38,11 @@ class ControlHandler(object):
         self.targetIndex = 0
         
         self.state = None
-        self.visionData = None
+        self.vision_data = None
         self.angleOutput = 0
         self.target_angle = 0
         self.hasRun = False
+        self.hasGotVisionData = False
         
     def stateCallback(self, data):
         """A callback for data published to /daniel/state about the robot's state"""
@@ -49,6 +50,7 @@ class ControlHandler(object):
     
     def visionCallback(self, data):
         self.vision_data = data
+        self.hasGotVisionData = True
 
     def getMessage(self):
         """Gets the actual control message"""
@@ -66,10 +68,10 @@ class ControlHandler(object):
         self.goal = self.points[self.targetIndex] # assign goal
         self.target_angle = -degrees(atan((self.state.x - self.goal[0])  / (self.state.y - self.goal[1]))) # get target
         self.angleOutput = clamp(self.anglePID.calculate(self.target_angle - self.state.angle), -10, 10) # clamp output
-        if self.hasRun and self.vision_data.detected:
+        if self.hasGotVisionData and self.vision_data.detected:
             self.angleOutput = clamp(self.angleVisionPID.calculate(-self.vision_data.x_offset), -10, 10)
-        print(self.vision_data.detected)
-
+            print(self.vision_data.x_offset)
+        
         msg = Control()
         msg.speed = self.distancePID.calculate(-dist(self.state.x, self.state.y, *self.goal)) # -dist because we are driving it to 0
         # which means if dist were positive this would output a negative, driving us backwards and increasing error
