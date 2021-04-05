@@ -1,13 +1,89 @@
 Team DarkThemeRevised
-Date: 2021-04-04 16:52:09 -05
-Seed: 529245
+Date: 2021-04-05 15:24:57 -05
+Seed: 1559175972
 
-Time: 24.960
-Multiplier: x9.600
-Score: 239.616
+Time: 17.680
+Multiplier: x7.680
+Score: 135.783
 
 -- Multipliers --
 Obstacles Bonus: x15.00
 Noise Bonus: x1.00
 Waypoint 1 reached: x0.80
 Waypoint 2 reached: x0.80
+Waypoint 3 reached: x0.80
+=========================
+Team DarkThemeRevised
+Date: 2021-04-05 15:27:21 -05
+Seed: 1472061
+
+Time: 14.920
+Multiplier: x7.680
+Score: 114.586
+
+-- Multipliers --
+Obstacles Bonus: x15.00
+Noise Bonus: x1.00
+Waypoint 1 reached: x0.80
+Waypoint 2 reached: x0.80
+Waypoint 3 reached: x0.80
+===========================
+Team DarkThemeRevised
+Date: 2021-04-05 15:28:30 -05
+Seed: 1850650386
+
+Time: 21.540
+Multiplier: x7.680
+Score: 165.427
+
+-- Multipliers --
+Obstacles Bonus: x15.00
+Noise Bonus: x1.00
+Waypoint 1 reached: x0.80
+Waypoint 2 reached: x0.80
+Waypoint 3 reached: x0.80
+===========================
+Team DarkThemeRevised
+Date: 2021-04-05 15:32:17 -05
+Seed: 5740
+
+Time: 19.260
+Multiplier: x7.680
+Score: 147.917
+
+-- Multipliers --
+Obstacles Bonus: x15.00
+Noise Bonus: x1.00
+Waypoint 1 reached: x0.80
+Waypoint 2 reached: x0.80
+Waypoint 3 reached: x0.80
+===========================
+Team DarkThemeRevisedNoVision
+Date: 2021-04-05 15:33:54 -05
+Seed: 1559175972
+
+Time: 19.760
+Multiplier: x7.680
+Score: 151.757
+
+-- Multipliers --
+Obstacles Bonus: x15.00
+Noise Bonus: x1.00
+Waypoint 1 reached: x0.80
+Waypoint 2 reached: x0.80
+Waypoint 3 reached: x0.80
+=============================
+Team DarkThemeRevisedNoVision
+Date: 2021-04-05 15:35:16 -05
+Seed: 1472061
+
+Time: 14.660
+Multiplier: x7.680
+Score: 112.589
+
+-- Multipliers --
+Obstacles Bonus: x15.00
+Noise Bonus: x1.00
+Waypoint 1 reached: x0.80
+Waypoint 2 reached: x0.80
+Waypoint 3 reached: x0.80
