@@ -53,8 +53,9 @@ add_message_files(
   Control.msg
   Gps.msg
   State.msg
-  Obstacle.msg
-  Obstacles.msg
+  Vision.msg
+  #Obstacle.msg
+  #Obstacles.msg
 )
 
 ## Generate services in the 'srv' folder

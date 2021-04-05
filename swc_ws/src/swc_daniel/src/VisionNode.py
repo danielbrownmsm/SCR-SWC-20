@@ -2,74 +2,83 @@
 
 from __future__ import print_function, division
 
-import rospy, time, os
+import rospy, os
 from sensor_msgs.msg import CompressedImage
+from swc_msgs.msg import Vision
 
 import numpy as np
 import cv2
 
 class VisionHandler(object):
     def __init__(self):
-        self.waypoints = []
-        self.obstacles = []
-        self.hasRun = False
+        self.x_offset = 0
+        self.distance = 0
+        self.detected = False
+
         self.ticks = 0
 
     def visionCallback(self, data):
+        # to limit our CPU usage because my machine is slow
         self.ticks += 1
-        if not self.hasRun and self.ticks % 100 == 0:
-            #print(data)
+
+        if self.ticks % 10 == 0:
             arr = np.fromstring(data.data, np.uint8)
             img_np = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-            #print(img_np)
             hsv = cv2.cvtColor(img_np, cv2.COLOR_BGR2HSV)
-            #hsv = cv2.GaussianBlur(hsv_, (5, 5), 0)
-            #print(hsv)
             
-            # UPDATE: this has been tuned by a color/filter script thingy and should be ~best
             lower = np.array([5, 80, 80]) # 10-20 gets the medium-dark stuff
-            upper = np.array([30, 225, 225]) # 20-30 seems even better at that
-            # 30-40 gets very little, 0-10 gets nothing
-            # nothing seems to get the bright stuff
-            #print("We made it this far")
-
+            upper = np.array([35, 225, 225]) # 20-30 seems even better at that
+            
             mask = cv2.inRange(hsv, lower, upper)
-            #print(mask)
+            
+            #kernel = np.ones((5, 5), np.uint8)
+            #mask = cv2.dilate(mask, kernel, iterations=1)
+            #mask = cv2.erode(mask, kernel, iterations=1)
+            
             contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # ???
-            #print(contours)
             contours = contours[0] if len(contours) == 2 else contours[1]
+            #mask = cv2.drawContours(hsv, contours, -1, (255, 0, 255), 4)
 
+            largest = {
+                "width":0,
+                "height":0,
+                "x":0,
+                "y":0
+            }
             for contour in contours:
-                color = (255, 0, 0)
                 x, y, width, height = cv2.boundingRect(contour)
                 if width > height * 2.5: # filter out really wide short ones
-                    color = (255, 0, 255)
                     continue
-                if width <= 7 or height <= 7: # filter out small ones
-                    color = (255, 0, 255)
+                elif width <= 7 or height <= 7: # filter out small ones
                     continue
-                if y < 100:
+                elif y < 80: # reject low ones (ie the ground)
                     continue
-                approx = cv2.approxPolyDP(contour, 0.04 * cv2.arcLength(contour, True), True)
-                print(len(approx))
-                #if len(approx) != 3:
-                #    continue
+                #elif cv2.contourArea(contour) < width * height * 1/4: # triangles have ~1/2 area of their bounding rect
+                #    continue # so we filter out skinny vertical strands or other edges
+                
+                if width * height > largest["width"] * largest["height"]:
+                    largest["width"] = width
+                    largest["height"] = height
+                    largest["x"] = x
+                    largest["y"] = y
 
-                #print(y)
-                cv2.rectangle(img_np, (x, y), (x + width, y + height), color, 1)
-                #print(x, y, width, height)
-                #print()
-            #print(len(contours))
+                #cv2.rectangle(img_np, (x, y), (x + width, y + height), (255, 0, 0), 1)
 
-            os.chdir("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20")
-            cv2.imwrite("image.png", img_np)
-            print("image wrote")
-            
-            #self.hasRun = True
-            #raise SystemExit
+            if largest["x"] != 0 and largest["width"] > 10:
+                self.x_offset = largest["x"] - 300 + largest["width"] / 2
+                self.distance = largest["height"]
+                self.detected = True
+            else:
+                self.detected = False
+            #os.chdir("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20")
+            #cv2.imwrite("image.png", img_np)
+            #print("image wrote")
 
     def getMessage(self):
         msg = Vision()
+        msg.x_offset = self.x_offset
+        msg.distance = self.distance
+        msg.detected = self.detected
 
         return msg
 
@@ -86,15 +95,13 @@ if __name__ == "__main__":
         rospy.logwarn("Vision node initialized!")
 
         # Create a Publisher that we can use to publish messages to the /daniel/control topic
-        #publisher = rospy.Publisher("/daniel/vision", Vision, queue_size=1)
-
+        publisher = rospy.Publisher("/daniel/vision", Vision, queue_size=1)
         visionHandler = VisionHandler()
 
-        # subscribe to our state topic
-        time.sleep(8)
+        # subscribe to the camera
         rospy.Subscriber("/sim/image/compressed", CompressedImage, visionHandler.visionCallback)
 
-        #rospy.Timer(rospy.Duration(0.1), publish)
+        rospy.Timer(rospy.Duration(0.1), publish)
 
         # Let ROS take control of this thread until a ROS wants to kill
         rospy.logwarn("Vision node setup complete")

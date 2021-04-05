@@ -5,7 +5,7 @@ from math import degrees, atan
 
 import rospy
 from Util import PIDController, dist, latLonToXY, clamp
-from swc_msgs.msg import State, Control
+from swc_msgs.msg import State, Control, Vision
 from swc_msgs.srv import Waypoints
 
 class ControlHandler(object):
@@ -25,6 +25,11 @@ class ControlHandler(object):
         
         self.anglePID = PIDController(0.05, 0, 0.001)
         self.anglePID.setSetpoint(0)
+
+        self.angleVisionPID = PIDController(0.05, 0, 0.01)
+        self.angleVisionPID.threshold = 10
+        self.angleVisionPID.velocityThreshold = 50
+        self.angleVisionPID.setSetpoint(0)
         
         # skip the first because it's just the starting pos
         self.points = [latLonToXY(point.latitude, point.longitude) for point in points[1:]]
@@ -33,12 +38,17 @@ class ControlHandler(object):
         self.targetIndex = 0
         
         self.state = None
+        self.visionData = None
+        self.angleOutput = 0
         self.target_angle = 0
         self.hasRun = False
         
     def stateCallback(self, data):
         """A callback for data published to /daniel/state about the robot's state"""
         self.state = data
+    
+    def visionCallback(self, data):
+        self.vision_data = data
 
     def getMessage(self):
         """Gets the actual control message"""
@@ -55,15 +65,19 @@ class ControlHandler(object):
 
         self.goal = self.points[self.targetIndex] # assign goal
         self.target_angle = -degrees(atan((self.state.x - self.goal[0])  / (self.state.y - self.goal[1]))) # get target
+        self.angleOutput = clamp(self.anglePID.calculate(self.target_angle - self.state.angle), -10, 10) # clamp output
+        if self.hasRun and self.vision_data.detected:
+            self.angleOutput = clamp(self.angleVisionPID.calculate(-self.vision_data.x_offset), -10, 10)
+        print(self.vision_data.detected)
 
         msg = Control()
         msg.speed = self.distancePID.calculate(-dist(self.state.x, self.state.y, *self.goal)) # -dist because we are driving it to 0
         # which means if dist were positive this would output a negative, driving us backwards and increasing error
-        msg.turn_angle = clamp(self.anglePID.calculate(self.target_angle - self.state.angle), -10, 10) # clamp output
+        msg.turn_angle = self.angleOutput
 
-        if self.state.y > self.goal[1] + 0.5: # if we're past it (for sure)
-            msg.speed *= -1 # then go backwards
-            msg.turn_angle *= -1 # which means turns are inverted
+        #if self.state.y > self.goal[1] + 0.5: # if we're past it (for sure)
+        #    msg.speed *= -1 # then go backwards
+        #    msg.turn_angle *= -1 # which means turns are inverted
 
         self.hasRun = True # so we don't prematurely go for another waypoint
         return msg
@@ -96,6 +110,7 @@ if __name__ == "__main__":
 
         # subscribe to our state topic
         rospy.Subscriber("/daniel/state", State, controlHandler.stateCallback)
+        rospy.Subscriber("/daniel/vision", Vision, controlHandler.visionCallback)
 
         rospy.Timer(rospy.Duration(0.1), publish)
 
