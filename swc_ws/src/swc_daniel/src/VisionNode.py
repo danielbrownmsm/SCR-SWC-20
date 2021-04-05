@@ -13,20 +13,25 @@ class VisionHandler(object):
         self.waypoints = []
         self.obstacles = []
         self.hasRun = False
+        self.ticks = 0
 
     def visionCallback(self, data):
-        if not self.hasRun:
+        self.ticks += 1
+        if not self.hasRun and self.ticks % 100 == 0:
             #print(data)
             arr = np.fromstring(data.data, np.uint8)
             img_np = cv2.imdecode(arr, cv2.IMREAD_COLOR)
             #print(img_np)
-            hsv_ = cv2.cvtColor(img_np, cv2.COLOR_BGR2HSV)
-            hsv = cv2.blur(hsv_, (5, 5))
+            hsv = cv2.cvtColor(img_np, cv2.COLOR_BGR2HSV)
+            #hsv = cv2.GaussianBlur(hsv_, (5, 5), 0)
             #print(hsv)
             
-            lower = np.array([20, 100, 100])
-            upper = np.array([40, 225, 225])
-            print("We made it this far")
+            # UPDATE: this has been tuned by a color/filter script thingy and should be ~best
+            lower = np.array([5, 80, 80]) # 10-20 gets the medium-dark stuff
+            upper = np.array([30, 225, 225]) # 20-30 seems even better at that
+            # 30-40 gets very little, 0-10 gets nothing
+            # nothing seems to get the bright stuff
+            #print("We made it this far")
 
             mask = cv2.inRange(hsv, lower, upper)
             #print(mask)
@@ -35,18 +40,33 @@ class VisionHandler(object):
             contours = contours[0] if len(contours) == 2 else contours[1]
 
             for contour in contours:
+                color = (255, 0, 0)
                 x, y, width, height = cv2.boundingRect(contour)
-                cv2.rectangle(img_np, (x, y), (x + width, y + height), (0, 0, 255), 1)
+                if width > height * 2.5: # filter out really wide short ones
+                    color = (255, 0, 255)
+                    continue
+                if width <= 7 or height <= 7: # filter out small ones
+                    color = (255, 0, 255)
+                    continue
+                if y < 100:
+                    continue
+                approx = cv2.approxPolyDP(contour, 0.04 * cv2.arcLength(contour, True), True)
+                print(len(approx))
+                #if len(approx) != 3:
+                #    continue
+
+                #print(y)
+                cv2.rectangle(img_np, (x, y), (x + width, y + height), color, 1)
                 #print(x, y, width, height)
                 #print()
-            print(len(contours))
+            #print(len(contours))
 
             os.chdir("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20")
             cv2.imwrite("image.png", img_np)
             print("image wrote")
             
-            self.hasRun = True
-            raise SystemExit
+            #self.hasRun = True
+            #raise SystemExit
 
     def getMessage(self):
         msg = Vision()
