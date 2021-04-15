@@ -74,6 +74,7 @@ class PurePursuit(object):
         newPoints = []
         for index, point in enumerate(points): # for each point in the given list of points
             newPoints.append(point) # add that point to our new list
+            #print(point)
             try:
                 nextPoint = points[index + 1] # get the next point
             except IndexError: # if that was the last point
@@ -82,11 +83,12 @@ class PurePursuit(object):
             angle = atan((point[0] - nextPoint[0]) / (point[1] - nextPoint[1])) # we don't need to wrap anything here in degrees() because everything expects radians and this returns radians so we good
             distance = pointDist(point, nextPoint) # the distance between current and next point (next point in list of points given)
             for length in frange(0.2, distance, 0.2): # for each point we want to add stepping by 0.2
-                x = cos(angle) * length  +  point[0] # add that point along the angle plus our current location
-                y = sin(angle) * length  +  point[1] # there's probably a better way to do this but whatever
+                y = cos(angle) * length  +  point[1] # add that point along the angle plus our current location
+                x = sin(angle) * length  +  point[0] # there's probably a better way to do this but whatever
                 newPoints.append((x, y)) # add it to the list
+                #print("adding ", x, y)
 
-        print(newPoints)
+        #print(newPoints)
         return newPoints
     
     def getNextHeading(self, state):
@@ -97,11 +99,16 @@ class PurePursuit(object):
         average is like O(n/2 / 0.2) when we're in the middle I guess. If I wanted to I could add like a lastGoalPoint and just start search
         a couple back from that to get like O(lookahead / 0.2) which is pretty good
         """
+        hasEnteredLookaheadCircle = False
         for index, point in enumerate(self.points): # for each of the points in our path
-            if dist(state.x, state.y, *point) > self.lookahead: # if the point is too far
+            if dist(state.x, state.y, *point) < self.lookahead:
+                hasEnteredLookaheadCircle = True
+            if dist(state.x, state.y, *point) > self.lookahead and index > 0 and hasEnteredLookaheadCircle: # if the point is too far
                 self.goal = self.points[index - 1] # then go back one, because we know the points are sorted because we put them there
+                break
             elif pointDist(point, self.points[-1]) < self.lookahead: # if we're seeing the end of the line
                 self.goal = self.points[-1]
+                break
 
         return degrees(atan((state.x - self.goal[0]) / (state.y - self.goal[1]))) #TODO make it return heading
 

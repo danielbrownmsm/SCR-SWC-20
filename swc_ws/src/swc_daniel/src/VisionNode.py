@@ -45,7 +45,7 @@ class VisionHandler(object):
                 "y":0
             }
 
-            if not FAST:
+            if not FAST: # draw boxes and all that for testing and debugging
                 img_np = cv2.drawContours(img_np, contours, -1, (255, 0, 255), 4)
                 for contour in contours:
                     color = (255, 0, 0)
