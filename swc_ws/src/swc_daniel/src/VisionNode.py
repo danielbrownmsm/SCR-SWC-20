@@ -9,10 +9,12 @@ from swc_msgs.msg import Vision
 import numpy as np
 import cv2
 
-LOWER = np.array([5, 80, 80]) # 10-20 gets the medium-dark stuff
-UPPER = np.array([40, 255, 255]) # 20-30 seems even better at that
+#LOWER = np.array([5, 80, 80]) # 10-20 gets the medium-dark stuff
+#UPPER = np.array([40, 255, 255]) # 20-30 seems even better at that
+LOWER = np.array([157, 107, 47])
+UPPER = np.array([190, 230, 255])
 KERNEL = np.ones((2, 2), np.uint8)
-FAST = True
+FAST = False
 
 class VisionHandler(object):
     def __init__(self):
@@ -26,7 +28,7 @@ class VisionHandler(object):
         # to limit our CPU usage because my machine is slow
         self.ticks += 1
 
-        if self.ticks % 10 == 0:
+        if self.ticks % 40 == 0:
             start = time.time()
             arr = np.fromstring(data.data, np.uint8)
             img_np = cv2.imdecode(arr, cv2.IMREAD_COLOR)
@@ -34,7 +36,12 @@ class VisionHandler(object):
 
             mask = cv2.inRange(hsv, LOWER, UPPER)
             mask = cv2.erode(mask, KERNEL, iterations=1)
+            
+            gray = cv2.bitwise_and(hsv, hsv, mask=mask) # apply color mask
+            gray = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY) # convert to grayscale
+            edges = cv2.Canny(gray, 100, 200) # get edges
 
+            
             contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # ???
             contours = contours[0] if len(contours) == 2 else contours[1]
 
@@ -50,16 +57,16 @@ class VisionHandler(object):
                 for contour in contours:
                     color = (255, 0, 0)
                     x, y, width, height = cv2.boundingRect(contour)
-                    if 0.3 < width / height > 4: # filter out ones with weird aspect ratios
-                        color = (100, 0, 255)
-                    elif width <= 7 or height <= 7: # filter out small ones
-                        color = (255, 255, 0)
-                        continue
-                    elif y > 250: # reject low ones (ie the ground)
-                        color = (0, 0, 255)
+                    #if 0.3 < width / height > 4: # filter out ones with weird aspect ratios
+                    #    color = (100, 0, 255)
+                    #elif width <= 7 or height <= 7: # filter out small ones
+                    #    color = (255, 255, 0)
+                    #    continue
+                    #elif y > 250: # reject low ones (ie the ground)
+                    #    color = (0, 0, 255)
                     #elif cv2.contourArea(contour) * 4 < width * height: # triangles have ~1/2 area of their bounding rect
                     #    color = (0, 0, 0)
-                    #cv2.rectangle(img_np, (x, y), (x + width, y + height), color, 2)
+                    cv2.rectangle(img_np, (x, y), (x + width, y + height), color, 2)
             else:
                 for contour in contours:
                     x, y, width, height = cv2.boundingRect(contour)
@@ -82,9 +89,11 @@ class VisionHandler(object):
                 self.detected = True
             else:
                 self.detected = False
-            #os.chdir("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20")
-            #cv2.imwrite("image.png", img_np)
-            #print("image wrote")
+
+            os.chdir("/mnt/c/Users/Brown_Family01/Documents/GitHub/SCR-SWC-20")
+            cv2.imwrite("image.png", edges)
+            print(len(contours))
+            print("image wrote")
             
             #print(time.time() - start)
 
